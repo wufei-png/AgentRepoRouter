@@ -2,14 +2,20 @@
 """Demo using acpx"""
 
 import sys
+from pathlib import Path
 
-sys.path.insert(0, ".")
+# TODO: Fix fragile path manipulation - 修复脆弱的路径操作 (Medium #6)
+# Use absolute path based on file location instead of relative "."
+demo_dir = Path(__file__).parent
+project_root = demo_dir.parent
+sys.path.insert(0, str(project_root))
+
 from orchai.router import Router
 
 
 def main():
     print("=== OrchAI Router Demo (with acpx) ===\n")
-    router = Router("skills/router/repo_mappings.json")
+    router = Router(str(project_root / "skills" / "router" / "repo_mappings.json"))
 
     test_cases = [
         "fix login bug in test-backend",

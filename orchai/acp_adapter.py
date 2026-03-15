@@ -51,6 +51,15 @@ class ACPAdapter:
                 "(e.g., ['opencode', 'claude-code', 'codex'])"
             )
 
+        # TODO: Fix agents not validated before execution - 修复代理在执行前未验证的问题 (Medium #10)
+        # Validate each agent before execution
+        invalid_agents = [a for a in agents if not self.is_agent_available(a)]
+        if invalid_agents:
+            raise ValueError(
+                f"Unknown agent(s): {invalid_agents}. "
+                f"Available agents: {list(self.CLI_COMMANDS.keys())}"
+            )
+
         last_error = None
         for agent in agents:
             try:
@@ -68,8 +77,8 @@ class ACPAdapter:
                 logger.warning("Agent %s failed: %s", agent, e)
                 last_error = e
                 continue
-                last_error = e
-                continue
+                # TODO: Fix duplicate/unreachable code - 修复重复/不可达代码 (Critical #1)
+                # These lines were unreachable due to 'continue' above - removed dead code
         raise Exception(f"All agents failed for {repo}: {last_error}")
 
     async def execute_agent(self, agent: str, repo: str, task: str) -> dict[str, Any]:

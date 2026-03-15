@@ -91,7 +91,9 @@ class Config:
         return None
 
     def get_enabled_agents(self) -> list[str]:
-        return [a["name"] for a in self.agents if a.get("enabled", True)]
+        # TODO: Fix KeyError in get_enabled_agents - 修复 get_enabled_agents 中的 KeyError (Critical #3)
+        # Use safe key access to avoid KeyError on malformed data
+        return [a.get("name", "unknown") for a in self.agents if a.get("enabled", True)]
 
     def get_project(self, name: str) -> dict[str, Any] | None:
         for proj in self.projects:

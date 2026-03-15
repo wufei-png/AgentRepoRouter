@@ -2,20 +2,77 @@
 
 import json
 import os
+import sys
 from pathlib import Path
+from typing import Optional
 
 import yaml
 
 PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
 
 
-def init_command() -> None:
+def get_project_root() -> Path:
+    """Get and validate project root directory.
+    
+    TODO: Fix no validation for environment variable path - 修复环境变量路径无验证的问题 (Medium #7)
+    Validates ORCHAI_PROJECT_ROOT environment variable or falls back to CWD.
+    
+    Returns:
+        Validated project root Path object.
+        
+    Raises:
+        ValueError: If ORCHAI_PROJECT_ROOT is set but invalid.
+    """
+    # TODO: Fix no validation for environment variable path - 修复环境变量路径无验证的问题 (Medium #7)
+    env_path = os.environ.get("ORCHAI_PROJECT_ROOT")
+    
+    if env_path:
+        project_root = Path(env_path).expanduser().resolve()
+        if project_root.exists():
+            if not project_root.is_dir():
+                raise ValueError(
+                    f"ORCHAI_PROJECT_ROOT exists but is not a directory: {project_root}"
+                )
+            return project_root
+        else:
+            # Create if it doesn't exist but parent exists
+            if project_root.parent.exists():
+                print(f"Warning: Creating project directory at {project_root}")
+                project_root.mkdir(parents=True, exist_ok=True)
+                return project_root
+            else:
+                raise ValueError(
+                    f"ORCHAI_PROJECT_ROOT points to non-existent path: {project_root}. "
+                    "Please create the parent directory first."
+                )
+    
+    # Fallback to current working directory
+    return Path(os.getcwd())
+
+
+def init_command(choice: Optional[str] = None) -> None:
+    """Initialize OrchAI.
+    
+    Args:
+        choice: Optional choice string ('1' or '2'). If not provided,
+                prompts for interactive input.
+    """
     print("=== OrchAI Initialization ===\n")
     print("Choose agent setup:")
     print("1. Create new 'orchai-router' agent")
     print("2. Use existing agent (claude/codex/opencode)")
-    choice = input("\nEnter choice (1 or 2): ").strip()
-
+    
+    # TODO: Fix non-interactive input in CLI - 修复 CLI 中的非交互式输入 (High #5)
+    # Support both interactive and non-interactive modes
+    if choice is None:
+        # Interactive mode: use input()
+        if sys.stdin.isatty():
+            choice = input("\nEnter choice (1 or 2): ").strip()
+        else:
+            # Non-interactive mode (piped input or CI/CD)
+            print("\nWarning: Running in non-interactive mode. Use: orchai init 1")
+            choice = "1"  # Default to option 1 in non-interactive mode
+    
     if choice == "1":
         create_new_agent()
     elif choice == "2":
@@ -48,7 +105,7 @@ def create_new_agent() -> None:
     print(f"✓ Created agent: {agents_dir}/orchai-router.yaml")
 
     # Use project root from environment or current directory
-    project_root = Path(os.environ.get("ORCHAI_PROJECT_ROOT", os.getcwd()))
+    project_root = get_project_root()
     (project_root / "config" / "agents").mkdir(parents=True, exist_ok=True)
     prompt_path = PROMPTS_DIR / "orchai-router.md"
     target_prompt_path = project_root / "config" / "agents" / "orchai-router.md"
@@ -67,7 +124,7 @@ def create_new_agent() -> None:
 def create_project_config() -> None:
     # TODO: Fix path creation relative to CWD - 修复路径创建相对于当前工作目录的问题 (High #8)
     # Use project root from environment or current directory
-    project_root = Path(os.environ.get("ORCHAI_PROJECT_ROOT", os.getcwd()))
+    project_root = get_project_root()
     config_dir = project_root / "config"
     config_dir.mkdir(parents=True, exist_ok=True)
 
@@ -109,7 +166,7 @@ def create_project_config() -> None:
 def create_router_skill() -> None:
     # TODO: Fix path creation relative to CWD - 修复路径创建相对于当前工作目录的问题 (High #8)
     # Use project root from environment or current directory
-    project_root = Path(os.environ.get("ORCHAI_PROJECT_ROOT", os.getcwd()))
+    project_root = get_project_root()
     skill_dir = project_root / "skills" / "router"
     skill_dir.mkdir(parents=True, exist_ok=True)
 

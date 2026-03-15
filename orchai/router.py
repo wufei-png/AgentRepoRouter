@@ -123,7 +123,9 @@ def add_mapping(
     repos = load_repos(mappings_file)
 
     for repo in repos:
-        if repo["name"] == repo_name:
+        # TODO: Fix KeyError in add_mapping - 修复 add_mapping 中的 KeyError (Critical #2)
+        # Use safe key access to avoid KeyError on malformed data
+        if repo.get("name") == repo_name:
             repo["keywords"] = list(set(repo.get("keywords", []) + keywords))
             with open(mappings_path, "w", encoding="utf-8") as f:
                 json.dump({"repos": repos}, f, indent=2)

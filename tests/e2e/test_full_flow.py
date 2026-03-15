@@ -1,13 +1,24 @@
 #!/usr/bin/env python3
 """End-to-end test for full OrchAI flow"""
 
+from pathlib import Path
+
 from orchai.router import Router
+
+
+# TODO: Fix hardcoded paths - 修复硬编码路径的问题 (Medium #8)
+# Use relative path from test file location
+def get_mappings_path() -> Path:
+    """Get mappings file path relative to test file"""
+    test_dir = Path(__file__).parent
+    project_root = test_dir.parent.parent
+    return project_root / "skills" / "router" / "repo_mappings.json"
 
 
 def test_case_1_feature_development():
     """Case 1: Feature development in test-backend"""
     print("\n=== Case 1: Feature Development ===")
-    router = Router("skills/router/repo_mappings.json")
+    router = Router(str(get_mappings_path()))
 
     task = "add password reset feature to test-backend"
     result = router.route(task)
@@ -21,7 +32,7 @@ def test_case_1_feature_development():
 def test_case_2_bugfix():
     """Case 2: Bugfix in test-backend"""
     print("\n=== Case 2: Bugfix ===")
-    router = Router("skills/router/repo_mappings.json")
+    router = Router(str(get_mappings_path()))
 
     task = "fix login bug in test-backend"
     result = router.route(task)
@@ -35,7 +46,7 @@ def test_case_2_bugfix():
 def test_case_3_docs_qa():
     """Case 3: Documentation Q&A"""
     print("\n=== Case 3: Documentation Q&A ===")
-    router = Router("skills/router/repo_mappings.json")
+    router = Router(str(get_mappings_path()))
 
     task = "what is the deployment process in test-docs"
     result = router.route(task)
@@ -48,7 +59,7 @@ def test_case_3_docs_qa():
 def test_case_4_ambiguous():
     """Case 4: Ambiguous project (self-evolution)"""
     print("\n=== Case 4: Ambiguous Project ===")
-    router = Router("skills/router/repo_mappings.json")
+    router = Router(str(get_mappings_path()))
 
     task = "fix login issue"
     result = router.route(task)
@@ -65,7 +76,7 @@ def test_case_4_ambiguous():
 def test_case_5_fallback():
     """Case 5: Fallback test (simulated)"""
     print("\n=== Case 5: Fallback Test ===")
-    router = Router("skills/router/repo_mappings.json")
+    router = Router(str(get_mappings_path()))
 
     task = "add logging to test-backend"
     result = router.route(task)

@@ -177,6 +177,19 @@ class ResultValidator:
 
     def validate_bugfix_or_feature(self, result: dict[str, Any]) -> dict[str, Any]:
         output_check = self.validate_output(result)
+        
+        # TODO: Fix inconsistent return structure - 修复不一致的返回结构 (High #4)
+        # Check for empty/invalid results early
+        if output_check.get("status") == "empty" or not result:
+            return {
+                "valid": False,
+                "output_valid": False,
+                "output_errors": output_check.get("errors", ["Result is empty"]),
+                "files_modified": False,
+                "changed_files": [],
+                "event_count": 0,
+            }
+        
         file_check = self.validate_file_changes()
 
         valid = output_check["valid"] and file_check["has_changes"]
@@ -192,6 +205,19 @@ class ResultValidator:
 
     def validate_qa(self, result: dict[str, Any]) -> dict[str, Any]:
         output_check = self.validate_output(result)
+        
+        # TODO: Fix inconsistent return structure - 修复不一致的返回结构 (High #4)
+        # Check for empty/invalid results early
+        if output_check.get("status") == "empty" or not result:
+            return {
+                "valid": False,
+                "output_valid": False,
+                "output_errors": output_check.get("errors", ["Result is empty"]),
+                "files_unchanged": True,
+                "changed_files": [],
+                "event_count": 0,
+            }
+        
         file_check = self.validate_file_changes()
 
         valid = output_check["valid"] and not file_check["has_changes"]

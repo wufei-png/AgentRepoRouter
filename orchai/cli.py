@@ -1,5 +1,6 @@
 """CLI entry point"""
 
+import argparse
 import sys
 
 from .init import init_command
@@ -14,16 +15,24 @@ EXIT_UNKNOWN_COMMAND = 3
 
 def main() -> int:
     """Main CLI entry point with proper exit codes"""
-    if len(sys.argv) < 2:
-        print("Usage: orchai <command>", file=sys.stderr)
-        print("Commands: init", file=sys.stderr)
-        return EXIT_INVALID_ARGS
-
-    cmd = sys.argv[1]
+    parser = argparse.ArgumentParser(prog="orchai")
+    parser.add_argument("command", help="Command to run (init)")
+    parser.add_argument(
+        "args", 
+        nargs="*", 
+        help="Arguments for the command (e.g., '1' or '2' for init)"
+    )
+    
+    # Use parse_known_args to handle unknown arguments gracefully
+    args, unknown = parser.parse_known_args()
+    
+    cmd = args.command
 
     if cmd == "init":
         try:
-            init_command()
+            # Pass optional choice argument (e.g., "1" or "2")
+            choice = args.args[0] if args.args else None
+            init_command(choice)
             return EXIT_SUCCESS
         except Exception as e:
             print(f"Error during initialization: {e}", file=sys.stderr)
