@@ -1,0 +1,77 @@
+[project]
+name = "orchai"
+version = "0.1.0"
+description = "AI Coding Agent Orchestrator"
+requires-python = ">=3.11"
+dependencies = [
+    "pre-commit>=4.5.1",
+    "pytest>=9.0.2",
+    "pytest-asyncio>=0.24",
+    "pyyaml>=6.0",
+]
+
+[project.scripts]
+orchai = "orchai.cli:main"
+
+[[tool.uv.index]]
+url = "https://mirrors.aliyun.com/pypi/simple"
+default = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests/unit", "tests/integration", "tests/e2e"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# Ruff configuration for this repository.
+[tool.ruff]
+# Keep Black-compatible line width.
+line-length = 88
+
+# exclude common generated/cache/build directories to reduce noise.
+extend-exclude = [
+  ".git",
+  ".venv",
+  "__pycache__",
+  "build",
+  "dist",
+]
+
+[tool.ruff.lint]
+# Low-controversy baseline:
+# E/W = pycodestyle, F = pyflakes, I = import sorting.
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes (必选)
+    "I",    # isort (导入排序)
+    "UP",   # pyupgrade (自动升级旧语法)
+    # "B",    # flake8-bugbear (发现潜在逻辑漏洞) - 暂时禁用，有53个B006等错误需手动修复
+    # "SIM",  # flake8-simplify (简化代码) - 暂时禁用，有268个错误需手动修复
+    # "C4",   # flake8-comprehensions (优化集合操作) - 暂时禁用，有26个错误需手动修复
+]
+
+# Keep long-line handling to the formatter. Ignore E501 (line too long).
+# F403: star imports are used in __init__.py files
+# E721: type comparison is used in some legacy code
+# UP035: typing.Dict is used in some files for compatibility
+# UP031: % formatting is used in legacy code, f-strings require unsafe fixes
+ignore = ["E501", "W505", "F403", "E721", "UP035", "UP031"]
+
+# Allow Ruff to auto-fix all fixable lint issues.
+fixable = ["ALL"]
+
+[tool.ruff.lint.per-file-ignores]
+# keep compatibility with existing flake8 habit in setup.cfg.
+"__init__.py" = ["F401"]
+
+[tool.ruff.format]
+# Black-style formatter options.
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+
+# enforce stable LF endings to avoid cross-platform diff noise.
+line-ending = "lf"

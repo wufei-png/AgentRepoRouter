@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.env
+*.egg-info/
+build/
+dist/
+
+# AskAny 定时任务输出
+scripts/logs/*.log

@@ -1,0 +1,47 @@
+{
+  "repos": [
+    {
+      "name": "test-backend",
+      "path": "./tests/repos/test-backend",
+      "keywords": [
+        "login",
+        "api",
+        "test-backend",
+        "password",
+        "auth",
+        "backend",
+        "issue"
+      ],
+      "description": "Backend service with authentication",
+      "agents": {
+        "primary": "opencode",
+        "fallback": [
+          "claude-code",
+          "codex"
+        ]
+      },
+      "skills": [
+        "build_and_test"
+      ]
+    },
+    {
+      "name": "test-docs",
+      "path": "./tests/repos/test-docs",
+      "keywords": [
+        "docs",
+        "documentation",
+        "deployment",
+        "architecture",
+        "test-docs"
+      ],
+      "description": "Documentation project",
+      "agents": {
+        "primary": "codex",
+        "fallback": [
+          "claude-code",
+          "opencode"
+        ]
+      }
+    }
+  ]
+}
