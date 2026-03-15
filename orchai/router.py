@@ -128,8 +128,12 @@ def add_mapping(
     repo_name: str,
     keywords: list[str],
     mappings_file: str = "skills/router/repo_mappings.json",
-) -> None:
-    """Add keyword mapping to repo"""
+) -> dict[str, Any]:
+    """Add keyword mapping to repo
+    
+    Returns:
+        dict with 'success' key or error information
+    """
     mappings_path = Path(mappings_file)
     repos = load_repos(mappings_file)
 
@@ -140,9 +144,11 @@ def add_mapping(
             repo["keywords"] = list(set(repo.get("keywords", []) + keywords))
             with open(mappings_path, "w", encoding="utf-8") as f:
                 json.dump({"repos": repos}, f, indent=2)
-            return
+            return {"success": True, "repo": repo_name, "keywords": repo["keywords"]}
 
-    raise ValueError(f"Repo not found: {repo_name}")
+    # TODO: Fix ValueError not caught in add_mapping - 修复 add_mapping 中 ValueError 未被捕获的问题 (High #2)
+    # Return error dict instead of raising ValueError
+    return {"success": False, "error": f"Repo not found: {repo_name}"}
 
 
 class Router:
@@ -173,5 +179,5 @@ class Router:
         confidence threshold. Use route() directly for clarity."""
         return self.route(task)
 
-    def add_mapping(self, repo_name: str, keywords: list[str]) -> None:
-        add_mapping(repo_name, keywords, str(self.mappings_file))
+    def add_mapping(self, repo_name: str, keywords: list[str]) -> dict[str, Any]:
+        return add_mapping(repo_name, keywords, str(self.mappings_file))

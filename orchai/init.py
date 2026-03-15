@@ -101,7 +101,7 @@ def create_new_agent() -> None:
     }
 
     with open(agents_dir / "orchai-router.yaml", "w", encoding="utf-8") as f:
-        yaml.dump(agent_config, f)
+        yaml.dump(agent_config, f, default_flow_style=False)
     print(f"✓ Created agent: {agents_dir}/orchai-router.yaml")
 
     # Use project root from environment or current directory
@@ -129,10 +129,10 @@ def create_project_config() -> None:
     config_dir.mkdir(parents=True, exist_ok=True)
 
     with open(config_dir / "projects.yaml", "w", encoding="utf-8") as f:
-        yaml.dump({"repos": []}, f)
+        yaml.dump({"repos": []}, f, default_flow_style=False)
 
     with open(config_dir / "router_config.yaml", "w", encoding="utf-8") as f:
-        yaml.dump({"fallback": {"enabled": True, "max_retries": 3}}, f)
+        yaml.dump({"fallback": {"enabled": True, "max_retries": 3}}, f, default_flow_style=False)
 
     with open(config_dir / "openclaw.yaml", "w", encoding="utf-8") as f:
         yaml.dump(
@@ -142,6 +142,7 @@ def create_project_config() -> None:
                 "agents_dir": "./config/agents",
             },
             f,
+            default_flow_style=False,
         )
 
     with open(config_dir / "agents.yaml", "w", encoding="utf-8") as f:
@@ -155,10 +156,11 @@ def create_project_config() -> None:
                 ]
             },
             f,
+            default_flow_style=False,
         )
 
     with open(config_dir / "mcp.yaml", "w", encoding="utf-8") as f:
-        yaml.dump({"servers": []}, f)
+        yaml.dump({"servers": []}, f, default_flow_style=False)
 
     print("✓ Created config files")
 

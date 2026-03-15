@@ -2,7 +2,22 @@
 """Demo using acpx"""
 
 import sys
+import atexit
 from pathlib import Path
+
+# TODO: Fix no version compatibility checks - 修复没有版本兼容性检查的问题 (Low #7)
+# Check Python version minimum
+if sys.version_info < (3, 10):
+    print("Error: Python 3.10+ required")
+    sys.exit(1)
+
+# TODO: Fix demo uses sys.exit without cleanup - 修复 demo 使用 sys.exit 但没有清理的问题 (Low #8)
+# Register cleanup handler
+def _cleanup():
+    """Cleanup handler for demo exit"""
+    pass  # Add any cleanup here if needed
+
+atexit.register(_cleanup)
 
 # TODO: Fix fragile path manipulation - 修复脆弱的路径操作 (Medium #6)
 # Use absolute path based on file location instead of relative "."

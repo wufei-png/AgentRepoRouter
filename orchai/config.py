@@ -7,13 +7,22 @@ from typing import Any, Optional
 
 import yaml
 
-# TODO: Fix no logging configuration - 修复没有日志配置的问题 (Low #10)
-# Configure basic logging if not already configured
-if not logging.getLogger().handlers:
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
+# TODO: Fix basic config called at module level - 修复模块级别的基础配置问题 (Medium #5)
+# Use lazy initialization to avoid overriding user's logging setup
+_logging_configured = False
+
+def _ensure_logging():
+    """Ensure logging is configured (lazy initialization)"""
+    global _logging_configured
+    if not _logging_configured:
+        # Only configure if user hasn't set up logging
+        root_logger = logging.getLogger()
+        if not root_logger.handlers and not root_logger.level:
+            logging.basicConfig(
+                level=logging.INFO,
+                format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            )
+        _logging_configured = True
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +36,9 @@ class Config:
     # Make config_dir an instance variable, not class variable
 
     def __new__(cls, config_dir: str = "config"):
+        # Ensure logging is configured (lazy init)
+        _ensure_logging()
+        
         # Double-checked locking pattern for thread safety
         # Note: Only the first config_dir is used due to singleton pattern
         if cls._instance is None:

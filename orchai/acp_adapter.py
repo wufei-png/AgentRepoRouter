@@ -134,6 +134,7 @@ class ACPAdapter:
         # Add configurable timeout to prevent indefinite hanging
         DEFAULT_TIMEOUT = 300  # 5 minutes default
 
+        process = None
         try:
             process = await asyncio.create_subprocess_exec(
                 *cmd,
@@ -148,8 +149,9 @@ class ACPAdapter:
                 )
             except TimeoutError:
                 # Kill the process on timeout
-                process.kill()
-                await process.wait()
+                if process and process.returncode is None:
+                    process.kill()
+                    await process.wait()
                 raise Exception(
                     f"acpx command timed out after {DEFAULT_TIMEOUT} seconds. "
                     "Consider increasing timeout or checking the agent response."
@@ -169,6 +171,15 @@ class ACPAdapter:
             )
         except TimeoutError:
             raise Exception(f"acpx command timed out: {' '.join(cmd)}")
+        finally:
+            # TODO: Fix process not killed on all exception paths - 修复进程未在所有异常路径中被终止的问题 (Critical #1)
+            # Ensure process is cleaned up on any exception
+            if process and process.returncode is None:
+                try:
+                    process.kill()
+                    await process.wait()
+                except Exception:
+                    pass  # Ignore cleanup errors
 
     def _parse_output(self, output: str) -> dict[str, Any]:
         """Parse NDJSON output from acpx"""
