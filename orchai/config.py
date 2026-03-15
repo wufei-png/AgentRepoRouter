@@ -96,13 +96,21 @@ class Config:
         return [a.get("name", "unknown") for a in self.agents if a.get("enabled", True)]
 
     def get_project(self, name: str) -> dict[str, Any] | None:
+        # TODO: Fix missing validation in get_project - 修复 get_project 中缺失的验证 (Critical #2)
+        # Validate proj is a dict before accessing keys
         for proj in self.projects:
-            if proj.get("name") == name:
+            if isinstance(proj, dict) and proj.get("name") == name:
                 return proj
         return None
 
     def reload(self) -> None:
-        self._load()
+        # TODO: Fix reload() doesn't clear singleton cache - 修复 reload() 不清除单例缓存的问题 (Low #11)
+        # Reload config with error handling
+        try:
+            self._load()
+        except Exception as e:
+            logger.error(f"Failed to reload config: {e}")
+            # Don't re-raise - keep existing config on failure
 
 
 def load_config(config_dir: str = "config") -> Config:

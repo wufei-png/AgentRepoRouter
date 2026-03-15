@@ -34,7 +34,10 @@ class ACPAdapter:
         return shutil.which("node") is not None
 
     def get_enabled_agents(self) -> list[str]:
-        return self.config.get_enabled_agents()
+        # TODO: Fix potential duplicate agent names - 修复潜在的重复代理名称问题 (High #5)
+        # Use dict.fromkeys to preserve order while removing duplicates
+        agents = self.config.get_enabled_agents()
+        return list(dict.fromkeys(agents))
 
     def is_agent_available(self, agent: str) -> bool:
         return agent in self.CLI_COMMANDS

@@ -28,5 +28,22 @@ def route_task(task: str) -> dict:
                 sys.path.insert(0, str(project_root))
             from orchai.router import Router
 
-    router = Router()
-    return router.route(task)
+    # TODO: Fix no error handling for init failure - 修复初始化失败无错误处理的问题 (High #6)
+    # Add error handling for router initialization failures
+    try:
+        router = Router()
+    except Exception as e:
+        return {
+            "found": False,
+            "candidates": [],
+            "reason": f"Router initialization failed: {str(e)}"
+        }
+    
+    try:
+        return router.route(task)
+    except Exception as e:
+        return {
+            "found": False,
+            "candidates": [],
+            "reason": f"Routing failed: {str(e)}"
+        }

@@ -102,6 +102,11 @@ def _match_score(task: str, repo: dict[str, Any]) -> float:
 
 
 def _classify_task(task: str) -> str:
+    # TODO: Fix missing input validation in _classify_task - 修复 _classify_task 中缺失的输入验证 (Critical #1)
+    # Validate task is not None before processing
+    if not task or not isinstance(task, str):
+        return "qa"  # Default to qa for invalid input
+    
     if any(w in task for w in ["add", "implement", "create", "new"]):
         return "feature"
     if any(w in task for w in ["fix", "bug", "error", "issue"]):

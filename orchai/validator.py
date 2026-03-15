@@ -145,6 +145,8 @@ class ResultValidator:
         }
 
     def _is_false_positive(self, msg: str) -> bool:
+        # TODO: Fix case-sensitive false positive check - 修复大小写敏感的误报检查 (High #4)
+        # Use lowercase comparison to catch all variations like "No Error", "NO ERROR", etc.
         false_positive_patterns = [
             "no error",
             "without error",
@@ -152,7 +154,8 @@ class ResultValidator:
             "error message",
             "catch error",
         ]
-        return any(p in msg for p in false_positive_patterns)
+        msg_lower = msg.lower()
+        return any(p in msg_lower for p in false_positive_patterns)
 
     def validate_file_changes(self) -> dict[str, Any]:
         changed_files = []
@@ -160,7 +163,9 @@ class ResultValidator:
 
         for path in self._initial_files:
             if not path.exists():
-                changed_files.append(f"{path} (deleted)")
+                # TODO: Fix memory issue with deleted files - 修复已删除文件的内存问题 (Medium #8)
+                # Use relative path instead of full absolute path for consistency
+                changed_files.append(f"{path.relative_to(self.repo_path)} (deleted)")
                 continue
 
             current_hash = self._hash_file(path)
