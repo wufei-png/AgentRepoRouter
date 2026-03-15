@@ -7,8 +7,10 @@ from typing import Any
 from .config import Config
 
 # TODO: Fix magic number for confidence threshold - 修复置信度阈值的魔数 (Medium #11)
-# Make confidence threshold configurable
-DEFAULT_CONFIDENCE_THRESHOLD = 1.5  # Multiplier for determining unique match
+# Make confidence threshold configurable with explanation
+# 1.5 means the top match needs 50% more score than second best to be considered unique
+# This prevents ambiguous routing when scores are close together
+DEFAULT_CONFIDENCE_THRESHOLD = 1.5
 
 
 def load_repos(
@@ -24,11 +26,15 @@ def load_repos(
         with open(mappings_path, encoding="utf-8") as f:
             repos = json.load(f).get("repos", [])
 
+    # TODO: Fix inefficient loop in load_repos - 修复 load_repos 中的低效循环问题 (High #3)
+    # Use dict/set for O(1) lookup instead of O(n) for each project
+    existing_names = {r.get("name") for r in repos if r.get("name")}
     for proj in config.projects:
-        # TODO: Fix KeyError risk - 修复 KeyError 风险 (Critical #1)
         # Use r.get("name") to safely access key, avoid KeyError if malformed
-        if not any(r.get("name") == proj.get("name") for r in repos):
+        proj_name = proj.get("name")
+        if proj_name and proj_name not in existing_names:
             repos.append(proj)
+            existing_names.add(proj_name)
 
     return repos
 

@@ -8,6 +8,8 @@ from pathlib import Path
 # Use absolute path based on file location instead of relative "."
 demo_dir = Path(__file__).parent
 project_root = demo_dir.parent
+# TODO: Fix module insertion at beginning of path - 修复模块插入路径开头的问题 (Medium #8)
+# Note: This is acceptable for demos but for production should use importlib or proper package install
 sys.path.insert(0, str(project_root))
 
 from orchai.router import Router

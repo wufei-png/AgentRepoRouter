@@ -1,9 +1,10 @@
 """Router Skill implementation"""
+from typing import Any
 
 
 # TODO: Fix import from non-existent module - 修复从不存在的模块导入 (High #10)
 # Use relative import or try-except to handle standalone usage
-def route_task(task: str) -> dict:
+def route_task(task: str) -> dict[str, Any]:
     """Route task to appropriate repo and agent"""
     try:
         # Try relative import first (when used as package)

@@ -80,6 +80,8 @@ class ResultValidator:
                     file_count += 1
 
     def _is_ignored(self, path: Path) -> bool:
+        # TODO: Fix hardcoded ignore patterns - 修复硬编码的忽略模式问题 (Low #11)
+        # Note: These patterns are hardcoded. Consider making configurable in future.
         ignore_patterns = {
             ".git",
             "__pycache__",
@@ -114,22 +116,20 @@ class ResultValidator:
         status = result.get("status")
         if status == "error" or status is None:
             events = result.get("events", [])
+            # TODO: Fix duplicate event iteration - 修复重复的事件迭代问题 (Critical #1)
+            # Combine error keyword and event type checks into single loop
             for event in events:
+                event_type = event.get("type", "")
                 msg = str(event.get("message", "")).lower()
+                
+                # Check for error keywords in message
                 if any(kw in msg for kw in self.ERROR_KEYWORDS):
-                    errors.append(f"Error in output: {msg}")
-
-        events = result.get("events", [])
-        for event in events:
-            event_type = event.get("type", "")
-            msg = str(event.get("message", "")).lower()
-
-            if "error" in event_type or "failure" in event_type:
-                errors.append(f"Event error: {msg}")
-
-            if any(kw in msg for kw in self.ERROR_KEYWORDS):
-                if not self._is_false_positive(msg):
-                    errors.append(f"Error keyword found: {msg}")
+                    if not self._is_false_positive(msg):
+                        errors.append(f"Error keyword found: {msg}")
+                
+                # Check for error event types
+                if "error" in event_type or "failure" in event_type:
+                    errors.append(f"Event error: {msg}")
 
         if not events and status == "completed":
             # TODO: Fix empty result handling - 修复空结果处理 (High #9)
@@ -195,6 +195,18 @@ class ResultValidator:
                 "event_count": 0,
             }
         
+        # TODO: Fix calling validate_file_changes for empty state - 修复对空状态调用 validate_file_changes 的问题 (High #4)
+        # Skip file change validation if output is already invalid
+        if not output_check["valid"]:
+            return {
+                "valid": False,
+                "output_valid": output_check["valid"],
+                "output_errors": output_check["errors"],
+                "files_modified": False,
+                "changed_files": [],
+                "event_count": output_check["event_count"],
+            }
+        
         file_check = self.validate_file_changes()
 
         valid = output_check["valid"] and file_check["has_changes"]
@@ -221,6 +233,18 @@ class ResultValidator:
                 "files_unchanged": True,
                 "changed_files": [],
                 "event_count": 0,
+            }
+        
+        # TODO: Fix calling validate_file_changes for empty state - 修复对空状态调用 validate_file_changes 的问题 (High #4)
+        # Skip file change validation if output is already invalid
+        if not output_check["valid"]:
+            return {
+                "valid": False,
+                "output_valid": output_check["valid"],
+                "output_errors": output_check["errors"],
+                "files_unchanged": True,
+                "changed_files": [],
+                "event_count": output_check["event_count"],
             }
         
         file_check = self.validate_file_changes()

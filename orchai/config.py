@@ -7,6 +7,14 @@ from typing import Any, Optional
 
 import yaml
 
+# TODO: Fix no logging configuration - 修复没有日志配置的问题 (Low #10)
+# Configure basic logging if not already configured
+if not logging.getLogger().handlers:
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+
 logger = logging.getLogger(__name__)
 
 
@@ -15,14 +23,17 @@ class Config:
     # Use lock to prevent race conditions in multi-threaded environments
     _instance: Optional["Config"] = None
     _lock = threading.Lock()
-    _config_dir: Path
+    # TODO: Fix singleton not reset on config change - 修复单例配置变更时无法重置的问题 (Critical #2)
+    # Make config_dir an instance variable, not class variable
 
     def __new__(cls, config_dir: str = "config"):
         # Double-checked locking pattern for thread safety
+        # Note: Only the first config_dir is used due to singleton pattern
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
                     cls._instance = super().__new__(cls)
+                    # Initialize as instance variable (not class variable)
                     cls._instance._config_dir = Path(config_dir)
                     cls._instance._load()
         return cls._instance
