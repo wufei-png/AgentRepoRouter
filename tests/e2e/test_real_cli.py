@@ -1,11 +1,25 @@
 """End-to-end tests with real CLI execution"""
 
+import subprocess
+
 import pytest
 
 from orchai.acp_adapter import ACPAdapter
 from orchai.validator import ResultValidator
 
 TEST_BACKEND = "tests/repos/test-backend"
+
+
+@pytest.fixture(autouse=True)
+def reset_test_repo():
+    subprocess.run(
+        ["git", "checkout", "src/auth.py"],
+        cwd=TEST_BACKEND,
+        capture_output=True,
+    )
+    opencode_json = f"{TEST_BACKEND}/opencode.json"
+    subprocess.run(["rm", "-f", opencode_json], capture_output=True)
+    yield
 
 
 @pytest.mark.asyncio

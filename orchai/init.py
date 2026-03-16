@@ -4,7 +4,6 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import Optional
 
 import yaml
 
@@ -13,19 +12,19 @@ PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
 
 def get_project_root() -> Path:
     """Get and validate project root directory.
-    
+
     TODO: Fix no validation for environment variable path - 修复环境变量路径无验证的问题 (Medium #7)
     Validates ORCHAI_PROJECT_ROOT environment variable or falls back to CWD.
-    
+
     Returns:
         Validated project root Path object.
-        
+
     Raises:
         ValueError: If ORCHAI_PROJECT_ROOT is set but invalid.
     """
     # TODO: Fix no validation for environment variable path - 修复环境变量路径无验证的问题 (Medium #7)
     env_path = os.environ.get("ORCHAI_PROJECT_ROOT")
-    
+
     if env_path:
         project_root = Path(env_path).expanduser().resolve()
         if project_root.exists():
@@ -45,14 +44,14 @@ def get_project_root() -> Path:
                     f"ORCHAI_PROJECT_ROOT points to non-existent path: {project_root}. "
                     "Please create the parent directory first."
                 )
-    
+
     # Fallback to current working directory
     return Path(os.getcwd())
 
 
-def init_command(choice: Optional[str] = None) -> None:
+def init_command(choice: str | None = None) -> None:
     """Initialize OrchAI.
-    
+
     Args:
         choice: Optional choice string ('1' or '2'). If not provided,
                 prompts for interactive input.
@@ -61,7 +60,7 @@ def init_command(choice: Optional[str] = None) -> None:
     print("Choose agent setup:")
     print("1. Create new 'orchai-router' agent")
     print("2. Use existing agent (claude/codex/opencode)")
-    
+
     # TODO: Fix non-interactive input in CLI - 修复 CLI 中的非交互式输入 (High #5)
     # Support both interactive and non-interactive modes
     if choice is None:
@@ -72,7 +71,7 @@ def init_command(choice: Optional[str] = None) -> None:
             # Non-interactive mode (piped input or CI/CD)
             print("\nWarning: Running in non-interactive mode. Use: orchai init 1")
             choice = "1"  # Default to option 1 in non-interactive mode
-    
+
     if choice == "1":
         create_new_agent()
     elif choice == "2":
@@ -132,7 +131,11 @@ def create_project_config() -> None:
         yaml.dump({"repos": []}, f, default_flow_style=False)
 
     with open(config_dir / "router_config.yaml", "w", encoding="utf-8") as f:
-        yaml.dump({"fallback": {"enabled": True, "max_retries": 3}}, f, default_flow_style=False)
+        yaml.dump(
+            {"fallback": {"enabled": True, "max_retries": 3}},
+            f,
+            default_flow_style=False,
+        )
 
     with open(config_dir / "openclaw.yaml", "w", encoding="utf-8") as f:
         yaml.dump(

@@ -19,32 +19,27 @@ def main() -> int:
     # TODO: Fix missing --help flag - 修复缺失的 --help 标志 (Medium #7)
     # Add help flag that users expect
     parser.add_argument(
-        "-h", 
-        "--help", 
-        action="store_true", 
-        help="Show this help message and exit"
+        "-h", "--help", action="store_true", help="Show this help message and exit"
     )
     parser.add_argument("command", help="Command to run (init)", nargs="?")
     parser.add_argument(
-        "args", 
-        nargs="*", 
-        help="Arguments for the command (e.g., '1' or '2' for init)"
+        "args", nargs="*", help="Arguments for the command (e.g., '1' or '2' for init)"
     )
-    
+
     # Use parse_known_args to handle unknown arguments gracefully
     args, unknown = parser.parse_known_args()
-    
+
     # Handle help flag
     if args.help:
         parser.print_help()
         return EXIT_SUCCESS
-    
+
     # Handle missing command
     if not args.command:
         print("Usage: orchai <command>", file=sys.stderr)
         print("Commands: init", file=sys.stderr)
         return EXIT_INVALID_ARGS
-    
+
     cmd = args.command
 
     if cmd == "init":

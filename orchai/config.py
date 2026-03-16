@@ -11,6 +11,7 @@ import yaml
 # Use lazy initialization to avoid overriding user's logging setup
 _logging_configured = False
 
+
 def _ensure_logging():
     """Ensure logging is configured (lazy initialization)"""
     global _logging_configured
@@ -20,9 +21,10 @@ def _ensure_logging():
         if not root_logger.handlers and not root_logger.level:
             logging.basicConfig(
                 level=logging.INFO,
-                format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+                format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
             )
         _logging_configured = True
+
 
 logger = logging.getLogger(__name__)
 
@@ -32,13 +34,13 @@ class Config:
     # Use lock to prevent race conditions in multi-threaded environments
     _instance: Optional["Config"] = None
     _lock = threading.Lock()
-    # TODO: Fix singleton not reset on config change - 修复单例配置变更时无法重置的问题 (Critical #2)
-    # Make config_dir an instance variable, not class variable
+    # Instance attribute for config directory
+    _config_dir: Path
 
     def __new__(cls, config_dir: str = "config"):
         # Ensure logging is configured (lazy init)
         _ensure_logging()
-        
+
         # Double-checked locking pattern for thread safety
         # Note: Only the first config_dir is used due to singleton pattern
         if cls._instance is None:

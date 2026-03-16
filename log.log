@@ -1,5 +1,5 @@
-commit 6c5df434b0fb75559b7b6f05f3cb2b0a25512396
-Author: wufei-png <legendary@sjtu.edu.cn>
-Date:   Mon Mar 16 04:06:45 2026 +0800
-
-    Fix: Address all review suggestions grouped by priority - review_20260316_035713.md
+不要用程序检测，将提示词写到openclaw中 告诉他优先级 他自行判断用什么agent 和skill 因为这个判断需要智能。
+思路就是cd到目录下，有符合要求的自定义agent和skill，就都调用 告诉这个agent用这个skill，否则就调用自定义agent，或者只用通用agent，调度任务的时候跟他说用这个skill 否则就是默认agent，无skill
+cli顺序支持配置：默认为claude code>opencode>codex
+总体顺序：按照cli的顺序依次查看有没有自定义agent或者自定义skill，如claude code而言，有.claude且有对应的自定义，直接用。如果所有cli都没有自定义agent或者skill
+还是按照claude code>opencode>codex的顺序依次调用默认agent，如果cli没安装，报错之类的，就继续fallback到下一个，直到如果都没有，报错返回。

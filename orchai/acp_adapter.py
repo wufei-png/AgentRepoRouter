@@ -63,10 +63,9 @@ class ACPAdapter:
                 f"Available agents: {list(self.CLI_COMMANDS.keys())}"
             )
 
-        last_error = None
         # Track all failed agents for better debugging
         failed_agents = []
-        
+
         for agent in agents:
             try:
                 result = await self.execute_agent(agent, repo, task)
@@ -82,17 +81,16 @@ class ACPAdapter:
             except Exception as e:
                 # TODO: Fix silent fallback chain failure - 修复静默的回退链失败问题 (High #5)
                 # Track which agents failed for better debugging
-                failed_agents.append({
-                    "agent": agent,
-                    "error": str(e)
-                })
+                failed_agents.append({"agent": agent, "error": str(e)})
                 logger.warning("Agent %s failed: %s", agent, e)
                 continue
                 # TODO: Fix duplicate/unreachable code - 修复重复/不可达代码 (Critical #1)
                 # These lines were unreachable due to 'continue' above - removed dead code
-        
+
         # Raise exception with detailed information about which agents failed
-        error_details = "; ".join(f"{fa['agent']}: {fa['error']}" for fa in failed_agents)
+        error_details = "; ".join(
+            f"{fa['agent']}: {fa['error']}" for fa in failed_agents
+        )
         raise Exception(
             f"All agents failed for {repo}. Failed agents: [{error_details}]. "
             f"Last error: {failed_agents[-1]['error'] if failed_agents else 'unknown'}"

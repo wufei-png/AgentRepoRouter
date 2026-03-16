@@ -31,14 +31,14 @@ def router(tmp_path):
 
 def test_route_clear_match(router):
     result = router.route("fix login bug in backend")
-    assert result["found"] == True
+    assert result["found"]
     assert result["repo"] == "test-backend"
     assert result["agent"] == "opencode"
 
 
 def test_route_ambiguous(router):
     result = router.route("update something")
-    assert result["found"] == False
+    assert not result["found"]
     assert len(result["candidates"]) >= 0
 
 

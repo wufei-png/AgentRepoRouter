@@ -114,19 +114,21 @@ class ResultValidator:
             }
 
         status = result.get("status")
+        # Initialize events early to avoid unbound variable error
+        events: list[dict[str, Any]] = result.get("events", [])
+
         if status == "error" or status is None:
-            events = result.get("events", [])
             # TODO: Fix duplicate event iteration - 修复重复的事件迭代问题 (Critical #1)
             # Combine error keyword and event type checks into single loop
             for event in events:
                 event_type = event.get("type", "")
                 msg = str(event.get("message", "")).lower()
-                
+
                 # Check for error keywords in message
                 if any(kw in msg for kw in self.ERROR_KEYWORDS):
                     if not self._is_false_positive(msg):
                         errors.append(f"Error keyword found: {msg}")
-                
+
                 # Check for error event types
                 if "error" in event_type or "failure" in event_type:
                     errors.append(f"Event error: {msg}")
@@ -182,7 +184,7 @@ class ResultValidator:
 
     def validate_bugfix_or_feature(self, result: dict[str, Any]) -> dict[str, Any]:
         output_check = self.validate_output(result)
-        
+
         # TODO: Fix inconsistent return structure - 修复不一致的返回结构 (High #4)
         # Check for empty/invalid results early
         if output_check.get("status") == "empty" or not result:
@@ -194,7 +196,7 @@ class ResultValidator:
                 "changed_files": [],
                 "event_count": 0,
             }
-        
+
         # TODO: Fix calling validate_file_changes for empty state - 修复对空状态调用 validate_file_changes 的问题 (High #4)
         # Skip file change validation if output is already invalid
         if not output_check["valid"]:
@@ -206,7 +208,7 @@ class ResultValidator:
                 "changed_files": [],
                 "event_count": output_check["event_count"],
             }
-        
+
         file_check = self.validate_file_changes()
 
         valid = output_check["valid"] and file_check["has_changes"]
@@ -222,7 +224,7 @@ class ResultValidator:
 
     def validate_qa(self, result: dict[str, Any]) -> dict[str, Any]:
         output_check = self.validate_output(result)
-        
+
         # TODO: Fix inconsistent return structure - 修复不一致的返回结构 (High #4)
         # Check for empty/invalid results early
         if output_check.get("status") == "empty" or not result:
@@ -234,7 +236,7 @@ class ResultValidator:
                 "changed_files": [],
                 "event_count": 0,
             }
-        
+
         # TODO: Fix calling validate_file_changes for empty state - 修复对空状态调用 validate_file_changes 的问题 (High #4)
         # Skip file change validation if output is already invalid
         if not output_check["valid"]:
@@ -246,7 +248,7 @@ class ResultValidator:
                 "changed_files": [],
                 "event_count": output_check["event_count"],
             }
-        
+
         file_check = self.validate_file_changes()
 
         valid = output_check["valid"] and not file_check["has_changes"]

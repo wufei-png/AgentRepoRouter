@@ -23,7 +23,7 @@ def test_case_1_feature_development():
     task = "add password reset feature to test-backend"
     result = router.route(task)
 
-    assert result["found"] == True
+    assert result["found"]
     assert result["repo"] == "test-backend"
     assert result["taskType"] == "feature"
     print(f"✓ Routed to {result['repo']} with {result['agent']}")
@@ -37,7 +37,7 @@ def test_case_2_bugfix():
     task = "fix login bug in test-backend"
     result = router.route(task)
 
-    assert result["found"] == True
+    assert result["found"]
     assert result["repo"] == "test-backend"
     assert result["taskType"] == "bugfix"
     print(f"✓ Routed to {result['repo']} with {result['agent']}")
@@ -51,7 +51,7 @@ def test_case_3_docs_qa():
     task = "what is the deployment process in test-docs"
     result = router.route(task)
 
-    assert result["found"] == True
+    assert result["found"]
     assert result["repo"] == "test-docs"
     print(f"✓ Routed to {result['repo']} with {result['agent']}")
 
@@ -81,7 +81,7 @@ def test_case_5_fallback():
     task = "add logging to test-backend"
     result = router.route(task)
 
-    assert result["found"] == True
+    assert result["found"]
     print(f"✓ Primary agent: {result['agent']}")
     print("✓ Fallback chain ready")
 

@@ -21,7 +21,7 @@ def test_backend_routing():
     router = Router(str(get_mappings_path()))
     result = router.route("fix login bug in test-backend")
 
-    assert result["found"] == True
+    assert result["found"]
     assert result["repo"] == "test-backend"
     assert result["agent"] == "opencode"
     assert result["taskType"] == "bugfix"
@@ -32,7 +32,7 @@ def test_docs_routing():
     router = Router(str(get_mappings_path()))
     result = router.route("update deployment documentation")
 
-    assert result["found"] == True
+    assert result["found"]
     assert result["repo"] == "test-docs"
 
 
@@ -41,5 +41,5 @@ def test_ambiguous_routing():
     router = Router(str(get_mappings_path()))
     result = router.route("update something")
 
-    assert result["found"] == False
+    assert not result["found"]
     assert "candidates" in result

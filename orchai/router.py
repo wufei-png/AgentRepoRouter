@@ -112,7 +112,7 @@ def _classify_task(task: str) -> str:
     # Validate task is not None before processing
     if not task or not isinstance(task, str):
         return "qa"  # Default to qa for invalid input
-    
+
     if any(w in task for w in ["add", "implement", "create", "new"]):
         return "feature"
     if any(w in task for w in ["fix", "bug", "error", "issue"]):
@@ -130,7 +130,7 @@ def add_mapping(
     mappings_file: str = "skills/router/repo_mappings.json",
 ) -> dict[str, Any]:
     """Add keyword mapping to repo
-    
+
     Returns:
         dict with 'success' key or error information
     """

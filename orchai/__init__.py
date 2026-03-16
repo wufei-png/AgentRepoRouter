@@ -15,7 +15,7 @@ __all__ = [
 ]
 
 # Import public classes for convenience
-from .router import Router, route, load_repos, add_mapping
-from .config import Config
 from .acp_adapter import ACPAdapter
+from .config import Config
+from .router import Router, add_mapping, load_repos, route
 from .validator import ResultValidator

@@ -1,21 +1,17 @@
 #!/usr/bin/env python3
 """Demo using acpx"""
 
-import sys
 import atexit
+import sys
 from pathlib import Path
 
-# TODO: Fix no version compatibility checks - 修复没有版本兼容性检查的问题 (Low #7)
-# Check Python version minimum
-if sys.version_info < (3, 10):
-    print("Error: Python 3.10+ required")
-    sys.exit(1)
 
 # TODO: Fix demo uses sys.exit without cleanup - 修复 demo 使用 sys.exit 但没有清理的问题 (Low #8)
 # Register cleanup handler
 def _cleanup():
     """Cleanup handler for demo exit"""
     pass  # Add any cleanup here if needed
+
 
 atexit.register(_cleanup)
 
@@ -27,16 +23,16 @@ project_root = demo_dir.parent
 # Note: This is acceptable for demos but for production should use importlib or proper package install
 sys.path.insert(0, str(project_root))
 
-from orchai.router import Router
+from orchai.router import Router  # noqa: E402
 
 
 def main():
     print("=== OrchAI Router Demo (with acpx) ===\n")
-    
+
     # TODO: Fix unhandled exception in demo - 修复 demo 中的未处理异常 (Critical #3)
     # Add error handling for missing mappings file
     mappings_path = project_root / "skills" / "router" / "repo_mappings.json"
-    
+
     try:
         router = Router(str(mappings_path))
     except FileNotFoundError:
@@ -55,7 +51,7 @@ def main():
 
     for task in test_cases:
         print(f"Task: {task}")
-        
+
         # TODO: Fix no error handling for missing mappings - 修复缺失映射的错误处理 (Medium #10)
         # Add defensive check for result structure
         try:
@@ -67,11 +63,15 @@ def main():
                     f"    Command: npx acpx@latest --cwd tests/repos/{result['repo']} {result['agent']} exec '<task>'"
                 )
             else:
-                reason = result.get("reason", "Unknown reason") if isinstance(result, dict) else "Invalid result"
+                reason = (
+                    result.get("reason", "Unknown reason")
+                    if isinstance(result, dict)
+                    else "Invalid result"
+                )
                 print(f"  ✗ Ambiguous - {reason}")
         except Exception as e:
             print(f"  ✗ Error routing task: {e}")
-        
+
         print()
 
 

@@ -1,4 +1,5 @@
 """Router Skill implementation"""
+
 from typing import Any
 
 
@@ -37,14 +38,10 @@ def route_task(task: str) -> dict[str, Any]:
         return {
             "found": False,
             "candidates": [],
-            "reason": f"Router initialization failed: {str(e)}"
+            "reason": f"Router initialization failed: {str(e)}",
         }
-    
+
     try:
         return router.route(task)
     except Exception as e:
-        return {
-            "found": False,
-            "candidates": [],
-            "reason": f"Routing failed: {str(e)}"
-        }
+        return {"found": False, "candidates": [], "reason": f"Routing failed: {str(e)}"}
