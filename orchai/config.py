@@ -56,7 +56,6 @@ class Config:
         self._load_openclaw()
         self._load_agents()
         self._load_mcp()
-        self._load_projects()
         self._load_router_config()
 
     def _load_yaml_safe(self, path: Path, default: Any = None) -> Any:
@@ -92,15 +91,8 @@ class Config:
 
     def _load_mcp(self) -> None:
         path = self._config_dir / "mcp.yaml"
-        # TODO: Fix no YAML error handling - 修复无 YAML 错误处理 (Medium #13)
         data = self._load_yaml_safe(path)
         self.mcp_servers = data.get("servers", []) if isinstance(data, dict) else []
-
-    def _load_projects(self) -> None:
-        path = self._config_dir / "projects.yaml"
-        # TODO: Fix no YAML error handling - 修复无 YAML 错误处理 (Medium #13)
-        data = self._load_yaml_safe(path)
-        self.projects = data.get("repos", []) if isinstance(data, dict) else []
 
     def _load_router_config(self) -> None:
         path = self._config_dir / "router_config.yaml"
@@ -116,17 +108,7 @@ class Config:
         return None
 
     def get_enabled_agents(self) -> list[str]:
-        # TODO: Fix KeyError in get_enabled_agents - 修复 get_enabled_agents 中的 KeyError (Critical #3)
-        # Use safe key access to avoid KeyError on malformed data
         return [a.get("name", "unknown") for a in self.agents if a.get("enabled", True)]
-
-    def get_project(self, name: str) -> dict[str, Any] | None:
-        # TODO: Fix missing validation in get_project - 修复 get_project 中缺失的验证 (Critical #2)
-        # Validate proj is a dict before accessing keys
-        for proj in self.projects:
-            if isinstance(proj, dict) and proj.get("name") == name:
-                return proj
-        return None
 
     def reload(self) -> None:
         # TODO: Fix reload() doesn't clear singleton cache - 修复 reload() 不清除单例缓存的问题 (Low #11)

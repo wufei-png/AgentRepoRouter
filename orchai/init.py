@@ -127,12 +127,15 @@ def create_project_config() -> None:
     config_dir = project_root / "config"
     config_dir.mkdir(parents=True, exist_ok=True)
 
-    with open(config_dir / "projects.yaml", "w", encoding="utf-8") as f:
-        yaml.dump({"repos": []}, f, default_flow_style=False)
-
     with open(config_dir / "router_config.yaml", "w", encoding="utf-8") as f:
         yaml.dump(
-            {"fallback": {"enabled": True, "max_retries": 3}},
+            {
+                "fallback": {
+                    "enabled": True,
+                    "max_retries": 3,
+                    "confidence_threshold": 1.5,
+                }
+            },
             f,
             default_flow_style=False,
         )

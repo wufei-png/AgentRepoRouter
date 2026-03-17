@@ -1,3 +1,4 @@
 fallback:
   enabled: true
   max_retries: 3
+  confidence_threshold: 1.5

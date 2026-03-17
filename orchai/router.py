@@ -15,26 +15,14 @@ DEFAULT_CONFIDENCE_THRESHOLD = 1.5
 
 def load_repos(
     mappings_file: str = "skills/router/repo_mappings.json",
-    config_dir: str = "config",
 ) -> list[dict[str, Any]]:
-    """Load repos from mappings file and config"""
+    """Load repos from mappings file only"""
     mappings_path = Path(mappings_file)
-    config = Config(config_dir)
     repos = []
 
     if mappings_path.exists():
         with open(mappings_path, encoding="utf-8") as f:
             repos = json.load(f).get("repos", [])
-
-    # TODO: Fix inefficient loop in load_repos - 修复 load_repos 中的低效循环问题 (High #3)
-    # Use dict/set for O(1) lookup instead of O(n) for each project
-    existing_names = {r.get("name") for r in repos if r.get("name")}
-    for proj in config.projects:
-        # Use r.get("name") to safely access key, avoid KeyError if malformed
-        proj_name = proj.get("name")
-        if proj_name and proj_name not in existing_names:
-            repos.append(proj)
-            existing_names.add(proj_name)
 
     return repos
 
@@ -82,8 +70,10 @@ def route(
         return {
             "found": True,
             "repo": repo.get("name"),
+            "path": repo.get("path"),
             "agent": repo.get("agents", {}).get("primary", "claude-code"),
             "fallback": repo.get("agents", {}).get("fallback", []),
+            "skills": repo.get("skills", []),
             "taskType": _classify_task(task_lower),
             "confidence": min(matches[0][0] / 10, 1.0),
         }
@@ -158,13 +148,20 @@ class Router:
         self,
         mappings_file: str = "skills/router/repo_mappings.json",
         config_dir: str = "config",
-        confidence_threshold: float = DEFAULT_CONFIDENCE_THRESHOLD,
+        confidence_threshold: float | None = None,
     ):
         self.mappings_file = Path(mappings_file)
         self.config = Config(config_dir)
-        self.repos = load_repos(str(mappings_file), config_dir)
-        # TODO: Fix duplicate method - 修复重复方法的问题 (Low #17)
-        # Store confidence threshold as instance variable
+        self.repos = load_repos(str(mappings_file))
+
+        if confidence_threshold is None:
+            router_cfg = self.config.router_config or {}
+            fallback_cfg = router_cfg.get("fallback", {})
+            cfg_value = fallback_cfg.get("confidence_threshold")
+            confidence_threshold = (
+                float(cfg_value) if cfg_value else DEFAULT_CONFIDENCE_THRESHOLD
+            )
+
         self.confidence_threshold = confidence_threshold
 
     def route(self, task: str) -> dict[str, Any]:
