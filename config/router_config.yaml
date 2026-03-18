@@ -2,3 +2,10 @@ fallback:
   enabled: true
   max_retries: 3
   confidence_threshold: 1.5
+
+# CLI 优先级顺序（按优先级从高到低）
+# 调度时会按此顺序依次尝试
+cli_priority:
+  - claude-code
+  - opencode
+  - codex

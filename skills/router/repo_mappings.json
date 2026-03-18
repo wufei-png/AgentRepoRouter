@@ -4,13 +4,13 @@
       "name": "test-backend",
       "path": "./tests/repos/test-backend",
       "keywords": [
-        "test-backend",
-        "password",
+        "auth",
         "api",
+        "backend",
+        "password",
         "login",
         "issue",
-        "auth",
-        "backend"
+        "test-backend"
       ],
       "description": "Backend service with authentication",
       "agents": {

@@ -96,9 +96,12 @@ class Config:
 
     def _load_router_config(self) -> None:
         path = self._config_dir / "router_config.yaml"
-        # TODO: Fix no YAML error handling - 修复无 YAML 错误处理 (Medium #13)
         self.router_config = self._load_yaml_safe(
-            path, {"fallback": {"enabled": True, "max_retries": 3}}
+            path,
+            {
+                "fallback": {"enabled": True, "max_retries": 3},
+                "cli_priority": ["claude-code", "opencode", "codex"],
+            },
         )
 
     def get_agent(self, name: str) -> dict[str, Any] | None:
