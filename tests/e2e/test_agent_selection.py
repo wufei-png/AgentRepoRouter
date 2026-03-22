@@ -111,11 +111,12 @@ class TestSkillRules:
         assert len(skills) > 0, "Expected at least one skill"
         print(f"\n✓ Found skills in .claude/skills/: {[s.name for s in skills]}")
 
-    def test_opencode_no_custom_skill(self):
-        """Test that .opencode/skills/ does NOT exist in test-backend"""
+    def test_opencode_has_custom_skill(self):
         skills_path = Path(TEST_BACKEND) / ".opencode" / "skills"
-        assert not skills_path.exists(), f"Expected {skills_path} to NOT exist"
-        print("\n✓ .opencode/skills/ does not exist (as expected)")
+        assert skills_path.exists(), f"Expected {skills_path} to exist"
+        skills = [s.name for s in skills_path.iterdir() if s.is_dir()]
+        assert "bug-fix" in skills, f"Expected bug-fix skill, got {skills}"
+        print(f"\n✓ .opencode/skills/ exists with: {skills}")
 
     def test_detection_logic(self):
         """Test the detection logic matches prompt expectations"""
@@ -130,27 +131,33 @@ class TestSkillRules:
         codex_agent = repo / ".codex"
         codex_skills = repo / ".codex" / "skills"
 
+        claude_skills_list = (
+            [s.name for s in claude_skills.iterdir()] if claude_skills.exists() else []
+        )
+        opencode_skills_list = (
+            [s.name for s in opencode_skills.iterdir()]
+            if opencode_skills.exists()
+            else []
+        )
+        codex_skills_list = (
+            [s.name for s in codex_skills.iterdir()] if codex_skills.exists() else []
+        )
+
         detection = {
             "claude-code": {
                 "has_agent": claude_agent.exists(),
                 "has_skill": claude_skills.exists(),
-                "skills": [s.name for s in claude_skills.iterdir()]
-                if claude_skills.exists()
-                else [],
+                "skills": claude_skills_list,
             },
             "opencode": {
                 "has_agent": opencode_agent.exists(),
                 "has_skill": opencode_skills.exists(),
-                "skills": [s.name for s in opencode_skills.iterdir()]
-                if opencode_skills.exists()
-                else [],
+                "skills": opencode_skills_list,
             },
             "codex": {
                 "has_agent": codex_agent.exists(),
                 "has_skill": codex_skills.exists(),
-                "skills": [s.name for s in codex_skills.iterdir()]
-                if codex_skills.exists()
-                else [],
+                "skills": codex_skills_list,
             },
         }
 
@@ -158,13 +165,13 @@ class TestSkillRules:
 
         assert detection["claude-code"]["has_agent"] is True
         assert detection["claude-code"]["has_skill"] is True
-        assert "build_and_test" in detection["claude-code"]["skills"]
+        assert "build_and_test" in claude_skills_list
 
         assert detection["opencode"]["has_agent"] is True
-        assert detection["opencode"]["has_skill"] is False
+        assert detection["opencode"]["has_skill"] is True
+        assert "bug-fix" in opencode_skills_list
 
         assert detection["codex"]["has_agent"] is True
-        assert detection["codex"]["has_skill"] is False
 
 
 class TestFallback:
