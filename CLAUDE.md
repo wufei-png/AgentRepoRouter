@@ -2,154 +2,163 @@
 
 ## 项目简介
 
-OrchAI 是一个本地运行的 AI 编程助理编排系统，通过 OpenClaw 作为统一入口，管理多个 coding agent（Claude Code、Codex、OpenCode、Cursor），自动路由任务到合适的 agent 和工作目录。
+OrchAI 是一个本地运行的 AI 编程助理编排系统，通过 OpenClaw Skill 进行路由，管理多个 coding agent（Claude Code、OpenCode、Cursor），自动路由任务到合适的 agent 和工作目录。
 
 ## 核心能力
 
-- **统一入口**: OpenClaw 提供 Web UI 和会话管理
-- **智能路由**: 基于关键词的任务路由（router.py）
-- **工作区隔离**: 每个项目独立工作目录，自动加载项目级 skills
-- **ACP 协议**: 通过 acpx 接入多种 coding agent
-- **结果验证**: ResultValidator 验证 agent 执行结果
+- **统一入口**: OpenClaw 提供会话管理
+- **智能路由**: LLM 判断任务类型并路由
+- **工作区隔离**: 每个项目独立工作目录
+- **直接 CLI**: 直接调用各 Agent CLI，无中间协议
+- **多语言支持**: Skill 支持中文/英文
 
 ## 技术栈
 
-- **控制层**: OpenClaw (统一入口、会话、workspace 路由)
-- **Agent 层**: Claude Code / Codex / OpenCode / Cursor (通过 acpx 接入)
-- **工具层**: MCP (GitHub、文档检索、知识库)
-- **语言**: Python 3.11+
+- **控制层**: OpenClaw Skill (路由逻辑)
+- **Agent 层**: Claude Code / OpenCode / Cursor (直接 CLI)
+- **初始化**: Shell 脚本
+- **语言**: Shell + Markdown
 
 ## 架构概览
 
 ```
-用户 → OpenClaw (Web UI)
+用户 → OpenClaw
   ↓
-Router Skill (关键词匹配路由)
+Router Skill (LLM 判断路由)
   ↓
 选择 Repo + Agent
   ↓
-切换到项目目录 → acpx 启动 Agent
+cd 到项目目录 → 直接 CLI 启动 Agent
   ↓
 Agent 执行任务
 ```
 
 ## 核心组件
 
-### orchai/router.py
-任务路由模块，基于关键词匹配：
-- `route()` - 路由决策（关键词打分）
-- `_match_score()` - 计算匹配分数
-- `_classify_task()` - 任务类型分类
-- `load_repos()` / `add_mapping()` - 仓库映射管理
+### install.sh
 
-### orchai/config.py
-配置加载器（单例模式）：
-- `_load_openclaw()` - OpenClaw 配置
-- `_load_agents()` - Agent 列表
-- `_load_mcp()` - MCP 服务器
-- `_load_router_config()` - 路由配置
+安装脚本，负责初始化配置：
 
-### orchai/acp_adapter.py
-ACP 协议适配器：
-- `execute_with_fallback()` - agent 回退链执行
-- `_run_acpx_command()` - 调用 npx acpx
+```bash
+curl -fsSL https://.../install.sh | bash
+```
 
-### orchai/validator.py
-结果验证器：
-- `validate_output()` - 验证输出
-- `validate_file_changes()` - 文件变更检测
-- `validate_bugfix_or_feature()` / `validate_qa()` - 分类验证
+流程：
+1. 检查环境（Node.js, Git, OpenClaw）
+2. 选择语言（中文/English）
+3. 选择 CLI 工具
+4. 发现项目（Auto scan / Manual）
+5. 生成 `~/.openclaw/skills/router/references/repo_mappings.json`
+6. 部署选中的 Router Skill 为 `~/.openclaw/skills/router/SKILL.md`
 
-### orchai/cli.py
-CLI 入口：
-- `orchai init` - 初始化项目配置
+### skills/router/
+
+Router Skill 源文件：
+
+```
+skills/router/
+├── SKILL.zh.md        # 中文版
+├── SKILL.en.md        # 英文版
+└── references/
+    └── repo_mappings.json
+```
+
+安装时选择语言，对应文件被部署为 `~/.openclaw/skills/router/SKILL.md`。
+
+### ~/.openclaw/skills/router/references/repo_mappings.json
+
+用户配置文件：
+
+```json
+{
+  "schemaVersion": 1,
+  "agents": ["claude-code", "opencode", "cursor", "codex"],
+  "repos": [
+    {
+      "name": "my-backend",
+      "path": "/path/to/backend",
+      "type": "backend"
+    }
+  ]
+}
+```
+
+## CLI 命令格式
+
+| Agent | 命令 | 工作目录 |
+|-------|------|---------|
+| Claude Code | `claude -p "task"` | `cd /path && claude -p "task"` |
+| Claude Code (sub-agent) | `claude --agent <name> "task"` | `cd /path && claude --agent <name> "task"` |
+| OpenCode | `opencode run "task"` | `cd /path && opencode run "task"` |
+| Cursor | `agent -p "task"` | `cd /path && agent -p "task"` |
+
+## Agent 和 Skill 调用规范
+
+### 自定义 Agent
+
+| 工具 | 全局路径 | 项目路径 | 调用方式 |
+|------|---------|---------|---------|
+| Claude Code | `~/.claude/agents/` | `<repo>/.claude/agents/` | `--agent <name>` |
+| OpenCode | `~/.config/opencode/agents/` | `<repo>/.opencode/agents/` | 提示词 `use agent xxx` |
+| Cursor | `~/.cursor/agents/` | `<repo>/.cursor/agents/` | 提示词 `use agent xxx` |
+
+### Skill 调用
+
+```
+use skill <skill-name> to solve the following task: <task>
+```
+
+### 省略规则
+
+| 情况 | 写法 |
+|------|------|
+| Agent/Skill 在 agent 文件夹内，且只命中一个 | 省略不提 |
+| 只命中一个 | `use skill` 或 `use agent` |
+| 两者都命中 | 两者都用 |
+| 冲突 | 提示用户选择 |
 
 ## 项目结构
 
 ```
 OrchAI/
-├── orchai/                 # 核心 Python 包
-│   ├── __init__.py
-│   ├── router.py           # 路由逻辑
-│   ├── config.py           # 配置加载
-│   ├── acp_adapter.py      # ACP 适配器
-│   ├── validator.py        # 结果验证
-│   ├── cli.py              # CLI 入口
-│   └── init.py             # 初始化逻辑
-├── config/                 # 配置文件
-│   ├── agents.yaml         # Agent 定义
-│   ├── projects.yaml       # 项目列表
-│   ├── mcp.yaml            # MCP 配置
-│   ├── openclaw.yaml       # OpenClaw 配置
-│   └── router_config.yaml  # 路由配置
-├── skills/                 # 全局 skills
+├── scripts/
+│   └── install.sh              # 安装脚本
+├── skills/
 │   └── router/
-│       ├── skill.md        # Router skill
-│       └── repo_mappings.json # 仓库关键词映射
-├── prompts/                # 提示词模板
-│   ├── router-skill.md
-│   └── orchai-router.md
-├── tests/                  # 测试
-│   ├── unit/
-│   ├── integration/
-│   └── e2e/
-├── docs/                   # 文档
+│       ├── SKILL.zh.md         # Router Skill (中文)
+│       ├── SKILL.en.md         # Router Skill (英文)
+│       └── references/
+│           └── repo_mappings.json
+├── tests/repos/               # 测试仓库
+│   ├── test-backend/           # Claude Code 项目
+│   ├── test-docs/              # OpenCode 项目
+│   └── test-subagents/         # 自定义 Agent 测试
+├── docs/
 │   ├── ARCHITECTURE.md
-│   └── PRODUCT.md
-└── pyproject.toml          # 项目配置
+│   ├── PRODUCT.md
+│   └── plans/migration/plan.md
+└── legacy/                     # 历史归档
 ```
 
 ## 快速开始
 
 ```bash
 # 安装
-uv venv && source .venv/bin/activate
-uv pip install -e .
+curl -fsSL https://.../install.sh | bash
 
-# 初始化
-orchai init
+# 或本地安装
+bash scripts/install.sh
 
-# 运行 demo
-python3 demo.py
+# 编辑配置
+vim ~/.openclaw/skills/router/references/repo_mappings.json
 
-# 直接使用 acpx
-npx acpx@latest opencode --cwd tests/repos/test-backend "fix login bug"
+# 启动 OpenClaw
+openclaw
 ```
-
-## 路由配置
-
-### repo_mappings.json 示例
-
-```json
-{
-  "repos": [
-    {
-      "name": "test-backend",
-      "path": "./tests/repos/test-backend",
-      "keywords": ["auth", "api", "backend", "password", "login"],
-      "description": "Backend service with authentication",
-      "agents": {
-        "primary": "opencode",
-        "fallback": ["claude-code", "codex"]
-      },
-      "skills": ["build_and_test"]
-    }
-  ]
-}
-```
-
-### 任务类型分类
-
-| 关键词 | 类型 |
-|--------|------|
-| add, implement, create, new | feature |
-| fix, bug, error, issue | bugfix |
-| refactor, clean, improve | refactor |
-| doc, readme, guide | docs |
-| 其他 | qa |
 
 ## 文档导航
 
-- [ARCHITECTURE.md](docs/ARCHITECTURE.md) - 系统架构和技术决策
-- [PRODUCT.md](docs/PRODUCT.md) - 产品愿景和功能规划
-- [docs/plans/](docs/plans/) - 实现计划和任务追踪
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - 系统架构
+- [docs/PRODUCT.md](docs/PRODUCT.md) - 产品愿景
+- [docs/plans/migration/plan.md](docs/plans/migration/plan.md) - 迁移计划
+- [legacy/README.md](legacy/README.md) - 历史归档

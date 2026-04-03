@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "agents": ["claude-code", "opencode", "cursor", "codex"],
+  "repos": [
+    {
+      "name": "example-backend",
+      "path": "/path/to/backend",
+      "type": "backend"
+    },
+    {
+      "name": "example-frontend",
+      "path": "/path/to/frontend",
+      "type": "frontend"
+    }
+  ]
+}

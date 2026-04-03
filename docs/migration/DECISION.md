@@ -3,12 +3,11 @@
 ## 最终架构
 
 ```
-install.sh → init → OpenClaw Skill (运行时)
+install.sh → OpenClaw Skill (运行时)
 ```
 
-三层各司其职：
-- **install.sh** — 安装依赖（Node.js, Git, CLI tools）
-- **init** — 初始化配置（repo_mappings.json, Skill 部署）
+两层各司其职：
+- **install.sh** — 检查环境、收集 CLI/Repo 选择、部署 Skill 和配置
 - **OpenClaw Skill** — 运行时路由和执行
 
 ---
@@ -23,12 +22,12 @@ install.sh → init → OpenClaw Skill (运行时)
 |-------|---------|
 | Claude Code | `claude "task"` / `claude -p "task"` |
 | OpenCode | `opencode run "task"` |
-| Cursor | `cursor-agent "task"` |
+| Cursor | `agent -p "task"` |
 | Codex | `codex "task"` |
 
 **原因**：
 - acpx 不支持 Cursor
-- 直接 CLI 更好地支持 `--agent` 和 `--skill` 参数
+- 直接 CLI 更贴近各工具的原生命令和提示词约定
 - 更直接，无额外抽象层
 
 ### 2. Fallback 机制
@@ -68,17 +67,16 @@ OpenClaw Skill (`router/SKILL.md`) 负责：
 
 ---
 
-## init 流程
+## install.sh 流程
 
 ```
-1. 检查环境（Node.js 18+, Git, npm）
+1. 检查环境（Node.js 18+, Git, OpenClaw）
 2. 用户勾选需要的 CLI（claude-code, opencode, cursor, codex）
 3. 选择项目发现模式：
    - Auto scan: 输入根目录路径
    - Manual: 输入项目路径列表
-4. 生成 repo_mappings.json
+4. 生成 `~/.openclaw/skills/router/references/repo_mappings.json`
 5. 部署 router/SKILL.md 到 ~/.openclaw/skills/
-6. 安装用户选择的 CLI（如果未安装）
 ```
 
 ---
@@ -88,10 +86,9 @@ OpenClaw Skill (`router/SKILL.md`) 负责：
 ```
 ~/.openclaw/skills/
 └── router/
-    └── SKILL.md    # 路由逻辑
-
-~/.orchai/
-└── repo_mappings.json   # 项目和 Agent 配置
+    ├── SKILL.md                     # 路由逻辑
+    └── references/
+        └── repo_mappings.json       # 项目和 Agent 配置
 ```
 
 ---
@@ -100,17 +97,13 @@ OpenClaw Skill (`router/SKILL.md`) 负责：
 
 ```json
 {
+  "schemaVersion": 1,
   "agents": ["claude-code", "opencode", "cursor", "codex"],
   "repos": [
     {
       "name": "my-backend",
       "path": "/path/to/backend",
-      "auto_discovered": true
-    },
-    {
-      "name": "manual-project",
-      "path": "/path/to/manual",
-      "auto_discovered": false
+      "type": "backend"
     }
   ]
 }
@@ -126,7 +119,7 @@ OpenClaw Skill (`router/SKILL.md`) 负责：
 | acp_adapter.py | 直接 CLI |
 | validator.py | Skill 内处理 |
 | config.py | repo_mappings.json |
-| cli.py/init.py | install.sh + init |
+| cli.py/init.py | install.sh |
 
 **结果**：~1000 行 Python 代码 → ~300 行 Shell + Skill Markdown
 
