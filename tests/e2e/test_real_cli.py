@@ -1,146 +1,31 @@
-"""End-to-end tests with real CLI execution"""
+"""End-to-end tests for installer edge cases."""
 
-import subprocess
-
-import pytest
-
-from orchai.acp_adapter import ACPAdapter
-from orchai.validator import ResultValidator
-
-TEST_BACKEND = "tests/repos/test-backend"
+from testsupport import (
+    load_deployed_config,
+    make_fake_bin,
+    run_install,
+    with_fake_path,
+)
 
 
-@pytest.fixture(autouse=True)
-def reset_test_repo():
-    subprocess.run(
-        ["git", "checkout", "src/auth.py"],
-        cwd=TEST_BACKEND,
-        capture_output=True,
-    )
-    opencode_json = f"{TEST_BACKEND}/opencode.json"
-    subprocess.run(["rm", "-f", opencode_json], capture_output=True)
-    yield
+def test_auto_scan_reprompts_when_root_directory_is_invalid(tmp_path):
+    home_dir = tmp_path / "home"
+    valid_root = tmp_path / "valid-root"
+    fake_bin = make_fake_bin(tmp_path, {"node", "git", "openclaw", "claude"})
 
+    (valid_root / "demo-repo" / ".git").mkdir(parents=True)
 
-@pytest.mark.asyncio
-async def test_bugfix_with_validation():
-    adapter = ACPAdapter()
-    validator = ResultValidator(TEST_BACKEND)
-    validator.capture_initial_state(files_to_watch=["src/auth.py"])
+    user_input = f"1\n1\n1\n{tmp_path / 'missing-root'}\n1\n{valid_root}\n"
+    result = run_install(home_dir, user_input, with_fake_path(fake_bin))
 
-    result = await adapter.execute_agent(
-        agent="opencode",
-        repo=TEST_BACKEND,
-        task="fix the login bug in src/auth.py where login always returns True without validating credentials",
-    )
-
-    validation = validator.validate_bugfix_or_feature(result)
-
-    print("\n=== Bugfix Validation ===")
-    print(f"Output valid: {validation['output_valid']}")
-    print(f"Files modified: {validation['files_modified']}")
-    print(f"Changed files: {validation['changed_files']}")
-    print(f"Event count: {validation['event_count']}")
-
-    if validation["output_errors"]:
-        print(f"Errors: {validation['output_errors']}")
-
-    assert validation["valid"], f"Bugfix validation failed: {validation}"
-    assert validation["output_valid"], "Output contains errors"
-    assert validation["files_modified"], "No files were modified"
-
-
-@pytest.mark.asyncio
-async def test_qa_with_validation():
-    adapter = ACPAdapter()
-    validator = ResultValidator(TEST_BACKEND)
-    validator.capture_initial_state()
-
-    result = await adapter.execute_agent(
-        agent="opencode",
-        repo=TEST_BACKEND,
-        task="describe what the auth.py file does",
-    )
-
-    validation = validator.validate_qa(result)
-
-    print("\n=== QA Validation ===")
-    print(f"Output valid: {validation['output_valid']}")
-    print(f"Files unchanged: {validation['files_unchanged']}")
-    print(f"Event count: {validation['event_count']}")
-
-    if validation["output_errors"]:
-        print(f"Errors: {validation['output_errors']}")
-    if validation["changed_files"]:
-        print(f"Changed files: {validation['changed_files']}")
-
-    assert validation["valid"], f"QA validation failed: {validation}"
-    assert validation["output_valid"], "Output contains errors"
-    assert validation["files_unchanged"], "Files were modified (should be read-only)"
-
-
-@pytest.mark.asyncio
-async def test_feature_with_validation():
-    adapter = ACPAdapter()
-    validator = ResultValidator(TEST_BACKEND)
-    validator.capture_initial_state(files_to_watch=["src/auth.py"])
-
-    result = await adapter.execute_agent(
-        agent="opencode",
-        repo=TEST_BACKEND,
-        task="add a logout function to src/auth.py",
-    )
-
-    validation = validator.validate_bugfix_or_feature(result)
-
-    print("\n=== Feature Validation ===")
-    print(f"Output valid: {validation['output_valid']}")
-    print(f"Files modified: {validation['files_modified']}")
-    print(f"Changed files: {validation['changed_files']}")
-    print(f"Event count: {validation['event_count']}")
-
-    if validation["output_errors"]:
-        print(f"Errors: {validation['output_errors']}")
-
-    assert validation["valid"], f"Feature validation failed: {validation}"
-    assert validation["output_valid"], "Output contains errors"
-    assert validation["files_modified"], "No files were modified"
-
-
-@pytest.mark.asyncio
-async def test_oneshot_no_history():
-    adapter = ACPAdapter()
-
-    first_result = await adapter.execute_agent(
-        agent="opencode",
-        repo=TEST_BACKEND,
-        task="remember this phrase: MAGIC_TOKEN_12345",
-    )
-
-    assert first_result["status"] == "completed"
-    assert len(first_result["events"]) > 0
-
-    second_result = await adapter.execute_agent(
-        agent="opencode",
-        repo=TEST_BACKEND,
-        task="what phrase did I ask you to remember in our previous conversation?",
-    )
-
-    combined_output = " ".join(
-        str(e.get("message", "")) for e in second_result.get("events", [])
-    ).lower()
-
-    has_magic_token = (
-        "magic_token_12345" in combined_output or "MAGIC_TOKEN_12345" in combined_output
-    )
-
-    print("\n=== One-shot No History Test ===")
-    print(f"First call events: {len(first_result['events'])}")
-    print(f"Second call events: {len(second_result['events'])}")
-    print(f"Combined output: {combined_output[:200]}...")
-    print(f"Has magic token: {has_magic_token}")
-
-    assert not has_magic_token, (
-        "LLM remembered previous conversation - one-shot mode not working! "
-        f"Output: {combined_output}"
-    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert f"Directory does not exist: {tmp_path / 'missing-root'}" in result.stdout
+    deployed_config = load_deployed_config(home_dir)
+    assert deployed_config["schemaVersion"] == 1
+    assert deployed_config["repos"] == [
+        {
+            "name": "demo-repo",
+            "path": str((valid_root / "demo-repo").resolve()),
+            "type": "backend",
+        }
+    ]

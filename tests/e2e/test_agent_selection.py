@@ -1,258 +1,43 @@
-"""E2E tests for agent selection, cli_priority, skill rules, and fallback"""
+"""E2E tests for CLI selection and language deployment."""
 
-import shutil
-from pathlib import Path
-
-import pytest
-import yaml
-
-from orchai.acp_adapter import ACPAdapter
-from orchai.config import Config
-
-TEST_BACKEND = "tests/repos/test-backend"
-
-
-@pytest.fixture
-def test_repo():
-    return TEST_BACKEND
+from testsupport import (
+    PROJECT_ROOT,
+    deployed_skill_path,
+    load_deployed_config,
+    make_fake_bin,
+    manual_install_input,
+    run_install,
+    with_fake_path,
+)
 
 
-@pytest.fixture
-def router_config_path(tmp_path):
-    config = {
-        "fallback": {"enabled": True, "max_retries": 3},
-        "cli_priority": ["claude-code", "opencode", "codex"],
-    }
-    config_file = tmp_path / "router_config.yaml"
-    with open(config_file, "w") as f:
-        yaml.dump(config, f)
-    return str(config_file)
+def test_cli_selection_reprompts_until_only_installed_tools_are_chosen(tmp_path):
+    home_dir = tmp_path / "home"
+    fake_bin = make_fake_bin(tmp_path, {"node", "git", "openclaw", "claude"})
+
+    user_input = f"1\n2\n1\n2\n{PROJECT_ROOT}\n\n"
+    result = run_install(home_dir, user_input, with_fake_path(fake_bin))
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "Selected CLI is not installed: opencode" in result.stdout
+    assert "Please select at least one installed CLI." in result.stdout
+    assert load_deployed_config(home_dir)["schemaVersion"] == 1
+    assert load_deployed_config(home_dir)["agents"] == ["claude-code"]
 
 
-class TestCLICalling:
-    """Test basic CLI calling - verify each CLI can be invoked"""
+def test_english_selection_deploys_only_skill_md(tmp_path):
+    home_dir = tmp_path / "home"
+    fake_bin = make_fake_bin(tmp_path, {"node", "git", "openclaw", "opencode"})
 
-    @pytest.mark.asyncio
-    async def test_opencode_basic_call(self, test_repo):
-        """Test that opencode can be called"""
-        adapter = ACPAdapter()
+    result = run_install(
+        home_dir,
+        manual_install_input("2", "2", [str(PROJECT_ROOT)]),
+        with_fake_path(fake_bin),
+    )
 
-        result = await adapter.execute_agent(
-            agent="opencode",
-            repo=test_repo,
-            task="what files are in the src directory?",
-        )
+    skill_path = deployed_skill_path(home_dir)
 
-        assert result["status"] == "completed"
-        assert len(result["events"]) > 0
-        print(f"\n✓ opencode executed successfully, events: {len(result['events'])}")
-
-    @pytest.mark.asyncio
-    async def test_codex_basic_call(self, test_repo):
-        """Test that codex can be called"""
-        adapter = ACPAdapter()
-
-        result = await adapter.execute_agent(
-            agent="codex",
-            repo=test_repo,
-            task="what files are in the src directory?",
-        )
-
-        assert result["status"] == "completed"
-        assert len(result["events"]) > 0
-        print(f"\n✓ codex executed successfully, events: {len(result['events'])}")
-
-
-class TestCLIPriorityOrder:
-    """Test cli_priority order is respected"""
-
-    def test_default_priority_order(self):
-        """Test default cli_priority order is claude-code > opencode > codex"""
-        config = Config("config")
-        router_config = config.router_config
-
-        cli_priority = router_config.get("cli_priority", [])
-        assert cli_priority == ["claude-code", "opencode", "codex"], (
-            f"Expected default order ['claude-code', 'opencode', 'codex'], got {cli_priority}"
-        )
-        print(f"\n✓ Default priority order: {cli_priority}")
-
-    def test_custom_priority_order(self, tmp_path):
-        """Test custom cli_priority order can be set"""
-        import yaml
-
-        config_content = {
-            "fallback": {"enabled": True, "max_retries": 3},
-            "cli_priority": ["codex", "opencode", "claude-code"],
-        }
-        config_file = tmp_path / "router_config.yaml"
-        with open(config_file, "w") as f:
-            yaml.dump(config_content, f)
-
-        with open(config_file) as f:
-            loaded = yaml.safe_load(f)
-
-        cli_priority = loaded.get("cli_priority", [])
-
-        assert cli_priority == ["codex", "opencode", "claude-code"]
-        print(f"\n✓ Custom priority order: {cli_priority}")
-
-
-class TestSkillRules:
-    """Test skill prefix rules"""
-
-    def test_claude_has_custom_skill(self):
-        """Test that .claude/skills/ exists in test-backend"""
-        skills_path = Path(TEST_BACKEND) / ".claude" / "skills"
-        assert skills_path.exists(), f"Expected {skills_path} to exist"
-        assert skills_path.is_dir()
-
-        skills = list(skills_path.iterdir())
-        assert len(skills) > 0, "Expected at least one skill"
-        print(f"\n✓ Found skills in .claude/skills/: {[s.name for s in skills]}")
-
-    def test_opencode_has_custom_skill(self):
-        skills_path = Path(TEST_BACKEND) / ".opencode" / "skills"
-        assert skills_path.exists(), f"Expected {skills_path} to exist"
-        skills = [s.name for s in skills_path.iterdir() if s.is_dir()]
-        assert "bug-fix" in skills, f"Expected bug-fix skill, got {skills}"
-        print(f"\n✓ .opencode/skills/ exists with: {skills}")
-
-    def test_detection_logic(self):
-        """Test the detection logic matches prompt expectations"""
-        repo = Path(TEST_BACKEND)
-
-        claude_agent = repo / ".claude"
-        claude_skills = repo / ".claude" / "skills"
-
-        opencode_agent = repo / ".opencode"
-        opencode_skills = repo / ".opencode" / "skills"
-
-        codex_agent = repo / ".codex"
-        codex_skills = repo / ".codex" / "skills"
-
-        claude_skills_list = (
-            [s.name for s in claude_skills.iterdir()] if claude_skills.exists() else []
-        )
-        opencode_skills_list = (
-            [s.name for s in opencode_skills.iterdir()]
-            if opencode_skills.exists()
-            else []
-        )
-        codex_skills_list = (
-            [s.name for s in codex_skills.iterdir()] if codex_skills.exists() else []
-        )
-
-        detection = {
-            "claude-code": {
-                "has_agent": claude_agent.exists(),
-                "has_skill": claude_skills.exists(),
-                "skills": claude_skills_list,
-            },
-            "opencode": {
-                "has_agent": opencode_agent.exists(),
-                "has_skill": opencode_skills.exists(),
-                "skills": opencode_skills_list,
-            },
-            "codex": {
-                "has_agent": codex_agent.exists(),
-                "has_skill": codex_skills.exists(),
-                "skills": codex_skills_list,
-            },
-        }
-
-        print(f"\n✓ Detection results: {detection}")
-
-        assert detection["claude-code"]["has_agent"] is True
-        assert detection["claude-code"]["has_skill"] is True
-        assert "build_and_test" in claude_skills_list
-
-        assert detection["opencode"]["has_agent"] is True
-        assert detection["opencode"]["has_skill"] is True
-        assert "bug-fix" in opencode_skills_list
-
-        assert detection["codex"]["has_agent"] is True
-
-
-class TestFallback:
-    """Test fallback when CLI is not available"""
-
-    @pytest.mark.asyncio
-    async def test_claude_code_not_available(self, test_repo):
-        """Test that claude-code is not available in the system"""
-        which_claude = shutil.which("claude-code")
-        print(f"\n✓ claude-code path: {which_claude}")
-        assert which_claude is None, "claude-code should NOT be installed"
-
-    @pytest.mark.asyncio
-    async def test_fallback_to_opencode(self, test_repo):
-        """Test fallback from claude-code to opencode"""
-        adapter = ACPAdapter()
-
-        result = await adapter.execute_with_fallback(
-            repo=test_repo,
-            task="list the files in src directory",
-            agents=["claude-code", "opencode"],
-        )
-
-        assert result["success"] is True
-        assert result["meta"]["agent"] == "opencode", (
-            f"Expected fallback to opencode, got {result['meta']['agent']}"
-        )
-        assert result["meta"]["fallback_used"] is True
-        print(f"\n✓ Fallback used: claude-code → {result['meta']['agent']}")
-
-    @pytest.mark.asyncio
-    async def test_fallback_chain_all_available(self, test_repo):
-        """Test fallback chain when first two fail"""
-        adapter = ACPAdapter()
-
-        result = await adapter.execute_with_fallback(
-            repo=test_repo,
-            task="what is in src directory",
-            agents=["claude-code", "opencode", "codex"],
-        )
-
-        assert result["success"] is True
-        assert result["meta"]["agent"] in ["opencode", "codex"]
-        assert result["meta"]["fallback_used"] is True
-        print(f"\n✓ Fallback chain works: {result['meta']['agent']}")
-
-    @pytest.mark.asyncio
-    async def test_all_agents_fail(self, test_repo):
-        """Test error when all agents fail"""
-        adapter = ACPAdapter()
-
-        with pytest.raises(Exception) as exc_info:
-            await adapter.execute_with_fallback(
-                repo="/nonexistent/path",
-                task="do something",
-                agents=["claude-code", "opencode", "codex"],
-            )
-
-        assert "failed" in str(exc_info.value).lower()
-        print(f"\n✓ All agents failed (expected): {exc_info.value}")
-
-
-class TestIntegration:
-    """Integration tests combining all features"""
-
-    @pytest.mark.asyncio
-    async def test_full_flow_with_detection(self, test_repo):
-        """Test full flow: detection + priority + fallback"""
-        adapter = ACPAdapter()
-
-        result = await adapter.execute_with_fallback(
-            repo=test_repo,
-            task="list files in src",
-            agents=["claude-code", "opencode", "codex"],
-        )
-
-        assert result["success"] is True
-        print(
-            f"\n✓ Full flow executed: agent={result['meta']['agent']}, fallback={result['meta']['fallback_used']}"
-        )
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v", "-s"])
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "Route coding tasks to appropriate repos and agents" in skill_path.read_text()
+    assert not (skill_path.parent / "SKILL.zh.md").exists()
+    assert not (skill_path.parent / "SKILL.en.md").exists()

@@ -1,5 +1,0 @@
-repos:
-  - name: test-backend
-    path: ./tests/repos/test-backend
-  - name: test-docs
-    path: ./tests/repos/test-docs

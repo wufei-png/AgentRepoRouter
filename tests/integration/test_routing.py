@@ -1,45 +1,46 @@
-"""Integration test for routing flow"""
+"""Integration tests for install.sh deployment."""
 
-from pathlib import Path
-
-from orchai.router import Router
-
-
-# TODO: Fix hardcoded path - 修复硬编码路径的问题 (Low #19)
-# Use relative path from test file location or environment variable
-def get_mappings_path() -> Path:
-    """Get mappings file path relative to test file"""
-    # Get the test file's directory
-    test_dir = Path(__file__).parent
-    # Navigate to project root (tests/integration -> project root)
-    project_root = test_dir.parent.parent
-    return project_root / "skills" / "router" / "repo_mappings.json"
+from testsupport import (
+    PROJECT_ROOT,
+    deployed_config_path,
+    deployed_skill_path,
+    load_deployed_config,
+    make_fake_bin,
+    manual_install_input,
+    run_install,
+    with_fake_path,
+)
 
 
-def test_backend_routing():
-    """Test routing to backend project"""
-    router = Router(str(get_mappings_path()))
-    result = router.route("fix login bug in test-backend")
+def test_manual_install_deploys_skill_and_config_into_router_directory(tmp_path):
+    home_dir = tmp_path / "home"
+    fake_bin = make_fake_bin(
+        tmp_path,
+        {"node", "git", "openclaw", "claude", "opencode", "agent", "codex"},
+    )
 
-    assert result["found"]
-    assert result["repo"] == "test-backend"
-    assert result["agent"] == "opencode"
-    assert result["taskType"] == "bugfix"
+    result = run_install(
+        home_dir,
+        manual_install_input("1", "1,2", [str(PROJECT_ROOT)]),
+        with_fake_path(fake_bin),
+    )
 
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert deployed_skill_path(home_dir).exists()
+    assert deployed_config_path(home_dir).exists()
+    assert not (home_dir / ".orchai" / "repo_mappings.json").exists()
 
-def test_docs_routing():
-    """Test routing to docs project"""
-    router = Router(str(get_mappings_path()))
-    result = router.route("update deployment documentation")
+    deployed_config = load_deployed_config(home_dir)
+    assert deployed_config == {
+        "schemaVersion": 1,
+        "agents": ["claude-code", "opencode"],
+        "repos": [
+            {
+                "name": "OrchAI",
+                "path": str(PROJECT_ROOT),
+                "type": "backend",
+            }
+        ],
+    }
 
-    assert result["found"]
-    assert result["repo"] == "test-docs"
-
-
-def test_ambiguous_routing():
-    """Test ambiguous task routing"""
-    router = Router(str(get_mappings_path()))
-    result = router.route("update something")
-
-    assert not result["found"]
-    assert "candidates" in result
+    assert "读取 `references/repo_mappings.json`" in deployed_skill_path(home_dir).read_text()

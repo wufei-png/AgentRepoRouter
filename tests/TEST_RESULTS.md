@@ -1,35 +1,28 @@
-# ✓ All Tests Passing
+# Test Results
 
-## Python Unit Tests
+## Latest Verification
+
+Date: `2026-03-25`
+
+Command:
+
 ```bash
-cd /home/wufei/github.com/wufei-png/OrchAI
-source .venv/bin/activate
-python3 -m pytest tests/unit/test_router.py -v
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 uv run --with pytest pytest -q
 ```
-**Result**: ✓ 3/3 tests passed
 
-## Shell Tests
+Result:
 
-### Test 1: Create Session
-```bash
-npx acpx@latest opencode sessions new
+```text
+15 passed in 2.85s
 ```
-**Result**: ✓ Session created (ses_30d786aeeffe16k5Oz65RePEGk)
 
-### Test 2: Interactive Prompt
-```bash
-npx acpx@latest opencode "介绍这个项目"
-```
-**Result**: ✓ Agent responds with project description
+## Covered Areas
 
-### Test 3: Router Demo
-```bash
-python3 demo.py
-```
-**Result**: ✓ Routes tasks correctly to test-backend and test-docs
-
-## Summary
-- ✓ uv environment setup working
-- ✓ acpx integration working
-- ✓ Router logic passing all tests
-- ✓ Shell commands working correctly
+- `install.sh` rejects unsupported environments
+- `install.sh` deploys `SKILL.md` and `references/repo_mappings.json` into `~/.openclaw/skills/router/`
+- `repo_mappings.json` carries `schemaVersion` and passes schema validation
+- Manual input and auto scan both generate the expected config
+- Duplicate project names are filtered by repo name
+- Relative manual paths are rejected
+- Language selection deploys exactly one `SKILL.md`
+- Test repos contain the expected custom agent / skill fixtures

@@ -1,9 +1,0 @@
-agents:
-  - name: orchai-router
-    enabled: true
-  - name: claude-code
-    enabled: true
-  - name: opencode
-    enabled: true
-  - name: codex
-    enabled: true

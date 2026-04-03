@@ -1,48 +1,44 @@
-"""Unit tests for Router"""
+"""Unit tests for Router skill source assets."""
 
 import json
-
-import pytest
-
-from orchai.router import Router, _classify_task
+import subprocess
+from pathlib import Path
 
 
-@pytest.fixture
-def router(tmp_path):
-    mappings_file = tmp_path / "mappings.json"
-    mappings = {
-        "repos": [
-            {
-                "name": "test-backend",
-                "keywords": ["auth", "login", "backend"],
-                "agents": {"primary": "opencode", "fallback": ["claude-code"]},
-            },
-            {
-                "name": "test-docs",
-                "keywords": ["docs", "documentation"],
-                "agents": {"primary": "codex", "fallback": ["claude-code"]},
-            },
-        ]
-    }
-    with open(mappings_file, "w") as f:
-        json.dump(mappings, f)
-    return Router(str(mappings_file))
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+ROUTER_DIR = PROJECT_ROOT / "skills" / "router"
 
 
-def test_route_clear_match(router):
-    result = router.route("fix login bug in backend")
-    assert result["found"]
-    assert result["repo"] == "test-backend"
-    assert result["agent"] == "opencode"
+def test_skill_variants_use_references_repo_mappings():
+    for skill_path in [ROUTER_DIR / "SKILL.zh.md", ROUTER_DIR / "SKILL.en.md"]:
+        content = skill_path.read_text()
+
+        assert "references/repo_mappings.json" in content
+        assert "--cwd" not in content
+        assert "use skill <skill-name> to solve the following task" in content
+        assert "use agent" in content
 
 
-def test_route_ambiguous(router):
-    result = router.route("update something")
-    assert not result["found"]
-    assert len(result["candidates"]) >= 0
+def test_reference_repo_mappings_matches_current_schema():
+    data = json.loads((ROUTER_DIR / "references" / "repo_mappings.json").read_text())
+
+    assert set(data.keys()) == {"schemaVersion", "agents", "repos"}
+    assert data["schemaVersion"] == 1
+    assert "language" not in data
+    assert data["agents"] == ["claude-code", "opencode", "cursor", "codex"]
+    assert all(set(repo.keys()) == {"name", "path", "type"} for repo in data["repos"])
 
 
-def test_classify_task():
-    assert _classify_task("add new feature") == "feature"
-    assert _classify_task("fix bug") == "bugfix"
-    assert _classify_task("refactor code") == "refactor"
+def test_legacy_repo_mappings_file_has_been_removed():
+    assert not (ROUTER_DIR / "repo_mappings.json").exists()
+
+
+def test_repo_mappings_validator_accepts_reference_file():
+    result = subprocess.run(
+        [str(PROJECT_ROOT / "scripts" / "validate_repo_mappings.sh"), str(ROUTER_DIR / "references" / "repo_mappings.json")],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr

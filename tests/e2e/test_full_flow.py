@@ -1,98 +1,60 @@
-#!/usr/bin/env python3
-"""End-to-end test for full OrchAI flow"""
+"""End-to-end tests for install.sh project discovery."""
 
-from pathlib import Path
-
-from orchai.router import Router
-
-
-# TODO: Fix hardcoded paths - 修复硬编码路径的问题 (Medium #8)
-# Use relative path from test file location
-def get_mappings_path() -> Path:
-    """Get mappings file path relative to test file"""
-    test_dir = Path(__file__).parent
-    project_root = test_dir.parent.parent
-    return project_root / "skills" / "router" / "repo_mappings.json"
+from testsupport import (
+    PROJECT_ROOT,
+    auto_scan_input,
+    load_deployed_config,
+    make_fake_bin,
+    run_install,
+    with_fake_path,
+)
 
 
-def test_case_1_feature_development():
-    """Case 1: Feature development in test-backend"""
-    print("\n=== Case 1: Feature Development ===")
-    router = Router(str(get_mappings_path()))
+def test_auto_scan_filters_duplicate_project_names(tmp_path):
+    home_dir = tmp_path / "home"
+    scan_root = tmp_path / "scan-root"
+    fake_bin = make_fake_bin(tmp_path, {"node", "git", "openclaw", "claude", "opencode"})
 
-    task = "add password reset feature to test-backend"
-    result = router.route(task)
+    (scan_root / "team-a" / "shared" / ".git").mkdir(parents=True)
+    (scan_root / "team-b" / "shared" / ".git").mkdir(parents=True)
+    (scan_root / "docs-site" / ".git").mkdir(parents=True)
 
-    assert result["found"]
-    assert result["repo"] == "test-backend"
-    assert result["taskType"] == "feature"
-    print(f"✓ Routed to {result['repo']} with {result['agent']}")
+    result = run_install(
+        home_dir,
+        auto_scan_input("1", "1,2", str(scan_root)),
+        with_fake_path(fake_bin),
+    )
 
+    deployed_config = load_deployed_config(home_dir)
+    repo_names = [repo["name"] for repo in deployed_config["repos"]]
+    shared_paths = {
+        str((scan_root / "team-a" / "shared").resolve()),
+        str((scan_root / "team-b" / "shared").resolve()),
+    }
 
-def test_case_2_bugfix():
-    """Case 2: Bugfix in test-backend"""
-    print("\n=== Case 2: Bugfix ===")
-    router = Router(str(get_mappings_path()))
-
-    task = "fix login bug in test-backend"
-    result = router.route(task)
-
-    assert result["found"]
-    assert result["repo"] == "test-backend"
-    assert result["taskType"] == "bugfix"
-    print(f"✓ Routed to {result['repo']} with {result['agent']}")
-
-
-def test_case_3_docs_qa():
-    """Case 3: Documentation Q&A"""
-    print("\n=== Case 3: Documentation Q&A ===")
-    router = Router(str(get_mappings_path()))
-
-    task = "what is the deployment process in test-docs"
-    result = router.route(task)
-
-    assert result["found"]
-    assert result["repo"] == "test-docs"
-    print(f"✓ Routed to {result['repo']} with {result['agent']}")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert deployed_config["schemaVersion"] == 1
+    assert repo_names.count("shared") == 1
+    assert set(repo_names) == {"shared", "docs-site"}
+    assert "Duplicate project name filtered: shared" in result.stdout
+    assert {
+        repo["path"] for repo in deployed_config["repos"] if repo["name"] == "shared"
+    } <= shared_paths
 
 
-def test_case_4_ambiguous():
-    """Case 4: Ambiguous project (self-evolution)"""
-    print("\n=== Case 4: Ambiguous Project ===")
-    router = Router(str(get_mappings_path()))
+def test_manual_input_rejects_relative_paths_and_keeps_absolute_paths(tmp_path):
+    home_dir = tmp_path / "home"
+    fake_bin = make_fake_bin(tmp_path, {"node", "git", "openclaw", "claude"})
 
-    task = "fix login issue"
-    result = router.route(task)
+    user_input = f"1\n1\n2\nrelative/path\n{PROJECT_ROOT}\n\n"
+    result = run_install(home_dir, user_input, with_fake_path(fake_bin))
 
-    if result["found"]:
-        print(f"✓ Routed to {result['repo']}")
-        # Simulate learning
-        router.add_mapping("test-backend", ["issue"])
-        print("✓ Learned new mapping")
-    else:
-        print(f"✓ Ambiguous - Candidates: {result['candidates']}")
-
-
-def test_case_5_fallback():
-    """Case 5: Fallback test (simulated)"""
-    print("\n=== Case 5: Fallback Test ===")
-    router = Router(str(get_mappings_path()))
-
-    task = "add logging to test-backend"
-    result = router.route(task)
-
-    assert result["found"]
-    print(f"✓ Primary agent: {result['agent']}")
-    print("✓ Fallback chain ready")
-
-
-if __name__ == "__main__":
-    print("=== OrchAI End-to-End Tests ===")
-
-    test_case_1_feature_development()
-    test_case_2_bugfix()
-    test_case_3_docs_qa()
-    test_case_4_ambiguous()
-    test_case_5_fallback()
-
-    print("\n=== All Tests Passed ✓ ===")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "Please enter an absolute path: relative/path" in result.stdout
+    assert load_deployed_config(home_dir)["repos"] == [
+        {
+            "name": "OrchAI",
+            "path": str(PROJECT_ROOT),
+            "type": "backend",
+        }
+    ]

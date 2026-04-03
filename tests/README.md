@@ -1,51 +1,68 @@
 # OrchAI Tests
 
-## Prerequisites
+## Scope
 
-1. **Initialize git repos** (acpx requires git):
-```bash
-cd tests/repos/test-backend && git init && git add -A && git commit -m "init"
-cd tests/repos/test-docs && git init && git add -A && git commit -m "init"
-```
+当前测试覆盖的是迁移后的 Shell + OpenClaw Skill 架构：
 
-2. **Create acpx sessions**:
-```bash
-cd tests/repos/test-backend && npx acpx@latest opencode sessions new
-cd tests/repos/test-docs && npx acpx@latest codex sessions new
-```
+- `install.sh` 的环境检查
+- `install.sh` 的语言选择和 CLI 选择
+- `install.sh` 的 Manual / Auto scan 项目发现
+- Router Skill 部署路径
+- `repo_mappings.json` 生成路径和结构
+- 测试仓库中的自定义 agent / skill 资产
+- `repo_mappings.json` schema/version 校验
 
-## Manual Shell Tests
+测试不再依赖已删除的 `orchai.*` Python 运行时，也不再要求 `acpx` 会话。
 
-### Test 1: Backend Q&A
-```bash
-cd tests/repos/test-backend
-npx acpx@latest opencode "介绍这个项目的功能"
-```
-**Expected**: Agent describes the authentication module
+## Run
 
-### Test 2: Docs Q&A
-```bash
-cd tests/repos/test-docs
-npx acpx@latest codex "what is the deployment process?"
-```
-**Expected**: Agent reads docs/deployment.md and explains
-
-### Test 3: Bugfix
-```bash
-cd tests/repos/test-backend
-npx acpx@latest opencode "fix the bug in src/auth.py where login always returns True"
-```
-**Expected**: Agent fixes the bug
-
-## Python Tests (unit, integration, e2e)
-
-From project root with venv activated (or use `uv run`):
+从项目根目录执行：
 
 ```bash
-cd /home/wufei/github.com/wufei-png/OrchAI
-uv venv && source .venv/bin/activate
-uv pip install -e .
-pytest -v
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 uv run --with pytest pytest -q
 ```
 
-**Expected**: All 13 tests pass (unit, integration, e2e). `pytest` uses `testpaths` in `pyproject.toml` (unit, integration, e2e only; `tests/repos` fixture code is excluded). If `pytest` is not in PATH, run `uv run pytest -v`.
+## Real OpenClaw E2E
+
+真实 OpenClaw e2e 是 opt-in 的，不会默认执行。
+
+前提：
+
+- OpenClaw Gateway 已经在本机运行并且 `openclaw health --json` 正常
+- 已存在一个专用 test agent
+- 推荐再准备一个专用 judge agent
+
+所需环境变量：
+
+```bash
+export ORCHAI_REAL_E2E=1
+export ORCHAI_REAL_E2E_AGENT=<test-agent-id>
+export ORCHAI_REAL_E2E_AGENT_WORKSPACE=<test-agent-workspace-abs-path>
+export ORCHAI_REAL_E2E_JUDGE_AGENT=<judge-agent-id>   # 可选，默认回退到 test agent
+export ORCHAI_REAL_E2E_LANGUAGE=en                    # 可选，默认 en
+```
+
+运行：
+
+```bash
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 uv run --with pytest pytest tests/real_e2e -m real_e2e -q
+```
+
+或使用辅助脚本：
+
+```bash
+bash scripts/run_real_e2e.sh
+```
+
+说明：
+
+- 测试不会启动 OpenClaw 服务，只会先检查 `openclaw health --json`
+- 测试通过 `openclaw agent --agent <id> --message ... --json` 调用真实 Gateway
+- 测试会把 router skill 的 trace 规则注入到 test agent workspace 的临时副本中，测试后自动恢复
+- 测试 repo 会复制到临时目录，并重新初始化 git，因此不会污染 `tests/repos/`
+
+## Notes
+
+- 测试会使用 fake PATH 模拟不同 CLI 安装状态，不需要真的调用 Claude Code、OpenCode、Cursor 或 Codex。
+- 测试中的安装脚本执行使用临时 `HOME`，不会污染当前用户目录。
+- `tests/repos/` 只作为 fixture 目录使用，不会被 pytest 递归收集。
