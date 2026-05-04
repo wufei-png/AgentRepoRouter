@@ -2,20 +2,19 @@
 
 ## 项目简介
 
-OrchAI 是一个本地运行的 AI 编程助理编排系统，通过 OpenClaw Skill 进行路由，管理多个 coding agent（Claude Code、OpenCode、Cursor），自动路由任务到合适的 agent 和工作目录。
+OrchAI 是一个本地运行的 AI 编程助理编排系统，通过 OpenClaw Skill 进行路由，管理多个 coding agent（Claude Code、OpenCode、Cursor、Codex），自动路由任务到合适的 agent 和代码仓库目录。
 
 ## 核心能力
 
 - **统一入口**: OpenClaw 提供会话管理
 - **智能路由**: LLM 判断任务类型并路由
-- **工作区隔离**: 每个项目独立工作目录
 - **直接 CLI**: 直接调用各 Agent CLI，无中间协议
 - **多语言支持**: Skill 支持中文/英文
 
 ## 技术栈
 
 - **控制层**: OpenClaw Skill (路由逻辑)
-- **Agent 层**: Claude Code / OpenCode / Cursor (直接 CLI)
+- **Agent 层**: Claude Code / OpenCode / Cursor / Codex (直接 CLI)
 - **初始化**: Shell 脚本
 - **语言**: Shell + Markdown
 
@@ -40,7 +39,7 @@ Agent 执行任务
 安装脚本，负责初始化配置：
 
 ```bash
-curl -fsSL https://.../install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/wufei-png/OrchAI/main/scripts/install.sh | bash
 ```
 
 流程：
@@ -91,6 +90,9 @@ skills/router/
 | Claude Code (sub-agent) | `claude --agent <name> "task"` | `cd /path && claude --agent <name> "task"` |
 | OpenCode | `opencode run "task"` | `cd /path && opencode run "task"` |
 | Cursor | `agent -p "task"` | `cd /path && agent -p "task"` |
+| Codex | `codex exec "task"` | `cd /path && codex exec "task"` |
+
+> 注：Codex 官方 CLI 也支持 `codex exec -C /path/to/repo "task"`；这里仍统一写成 `cd /path && ...`，便于和其他 CLI 对齐。
 
 ## Agent 和 Skill 调用规范
 
@@ -101,6 +103,19 @@ skills/router/
 | Claude Code | `~/.claude/agents/` | `<repo>/.claude/agents/` | `--agent <name>` |
 | OpenCode | `~/.config/opencode/agents/` | `<repo>/.opencode/agents/` | 提示词 `use agent xxx` |
 | Cursor | `~/.cursor/agents/` | `<repo>/.cursor/agents/` | 提示词 `use agent xxx` |
+
+### Codex 自定义 Agent / Skill
+
+- 全局配置：`~/.codex/config.toml`
+- 项目级配置：`<repo>/.codex/config.toml`
+- 全局自定义 agent：`~/.codex/agents/*.toml`
+- 项目级自定义 agent：`<repo>/.codex/agents/*.toml`
+- 全局 skill：`$HOME/.agents/skills/`
+- 项目级 skill：`<repo>/.agents/skills/`
+- 全局说明文件：`~/.codex/AGENTS.md`
+- 项目说明文件：`AGENTS.md`
+- 如果需要，也可以在 `config.toml` 里通过 `skills.config` 显式声明 skill 路径
+- 当前官方约定不是 `.codex/skills/`
 
 ### Skill 调用
 
@@ -144,7 +159,7 @@ OrchAI/
 
 ```bash
 # 安装
-curl -fsSL https://.../install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/wufei-png/OrchAI/main/scripts/install.sh | bash
 
 # 或本地安装
 bash scripts/install.sh
@@ -159,6 +174,6 @@ openclaw
 ## 文档导航
 
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - 系统架构
-- [docs/PRODUCT.md](docs/PRODUCT.md) - 产品愿景
+- [docs/PRODUCT.md](docs/PRODUCT.md) - 未来规划
 - [docs/plans/migration/plan.md](docs/plans/migration/plan.md) - 迁移计划
 - [legacy/README.md](legacy/README.md) - 历史归档

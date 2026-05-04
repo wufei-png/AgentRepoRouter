@@ -11,12 +11,17 @@ description: "路由编码任务到合适的仓库和 Agent。当用户想要在
 
 > 统一使用 `cd` 切换工作目录
 
-| Agent                   | 命令                           | 工作目录切换                               |
+| Agent平台                   | 命令                           | 工作目录切换                               |
 | ----------------------- | ------------------------------ | ------------------------------------------ |
 | Claude Code             | `claude -p "task"`             | `cd /path && claude -p "task"`             |
 | Claude Code (sub-agent) | `claude --agent <name> "task"` | `cd /path && claude --agent <name> "task"` |
 | OpenCode                | `opencode run "task"`          | `cd /path && opencode run "task"`          |
 | Cursor                  | `agent -p "task"`              | `cd /path && agent -p "task"`              |
+| Codex                   | `codex exec "task"`            | `cd /path && codex exec "task"`            |
+
+> **重要**：Cursor 的 CLI 可执行名就是 `agent`，不是 `cursor agent`。由于 `agent` 这个名字比较通用，模型容易误写成 `cursor agent -p`，但这是错误命令；涉及 Cursor CLI 时始终直接使用 `agent -p "task"`。
+>
+> **补充**：Codex 官方 CLI 也支持 `codex exec -C /path/to/repo "task"`。Router 文档里仍统一使用 `cd /path && ...`，以保持所有 CLI 的调用模式一致。
 
 ## Agent 自定义路径
 
@@ -27,6 +32,19 @@ description: "路由编码任务到合适的仓库和 Agent。当用户想要在
 | Cursor      | `~/.cursor/agents/`          | `<repo>/.cursor/agents/`   | ❌                  | ✅ `use agent xxx` |
 
 > **注意**：Cursor 和 OpenCode 的自定义 agent 只能通过**提示词**调用，不能通过 CLI 参数。
+
+### Codex 自定义 Agent / Skill
+
+- 全局配置：`~/.codex/config.toml`
+- 项目级配置：`<repo>/.codex/config.toml`
+- 全局自定义 agent：`~/.codex/agents/*.toml`
+- 项目级自定义 agent：`<repo>/.codex/agents/*.toml`
+- 全局 skill：`$HOME/.agents/skills/`
+- 项目级 skill：`<repo>/.agents/skills/`
+- 全局说明文件：`~/.codex/AGENTS.md`
+- 项目说明文件：`AGENTS.md`
+- 额外 skill 也可以通过 `config.toml` 中的 `skills.config` 声明路径
+- 当前官方约定不是 `.codex/skills/`
 
 ## Agent 和 Skill 调用规范
 
@@ -101,6 +119,9 @@ cd /path/to/repo && claude --agent bugfix "task description"
 
 # OpenCode / Cursor（提示词调用 agent）
 cd /path/to/repo && opencode run "use agent xxx to do: task description"
+
+# Codex
+cd /path/to/repo && codex exec "task description"
 
 # Skill 调用（统一格式）
 cd /path/to/repo && opencode run "use skill <skill-name> to solve: task description"

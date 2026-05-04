@@ -6,7 +6,7 @@
 **OpenClaw**
 - 统一入口和会话管理
 - Skill 加载和执行
-- Workspace 路由
+- Repo 路由
 
 ### 2. 路由层
 **Router Skill**
@@ -89,6 +89,9 @@
 | Claude Code (sub-agent) | `claude --agent <name> "task"` | `cd /path && claude --agent <name> "task"` |
 | OpenCode | `opencode run "task"` | `cd /path && opencode run "task"` |
 | Cursor | `agent -p "task"` | `cd /path && agent -p "task"` |
+| Codex | `codex exec "task"` | `cd /path && codex exec "task"` |
+
+> Codex 官方 CLI 额外支持 `codex exec -C /path/to/repo "task"`；OrchAI 文档仍统一使用 `cd /path && ...` 表达运行时模式。
 
 ## Agent 和 Skill 调用规范
 
@@ -99,6 +102,19 @@
 | Claude Code | `~/.claude/agents/` | `<repo>/.claude/agents/` | `--agent <name>` |
 | OpenCode | `~/.config/opencode/agents/` | `<repo>/.opencode/agents/` | 提示词 `use agent xxx` |
 | Cursor | `~/.cursor/agents/` | `<repo>/.cursor/agents/` | 提示词 `use agent xxx` |
+
+### Codex 自定义 Agent / Skill
+
+- 全局配置：`~/.codex/config.toml`
+- 项目级配置：`<repo>/.codex/config.toml`
+- 全局自定义 agent：`~/.codex/agents/*.toml`
+- 项目级自定义 agent：`<repo>/.codex/agents/*.toml`
+- 全局 skill：`$HOME/.agents/skills/`
+- 项目级 skill：`<repo>/.agents/skills/`
+- 全局说明文件：`~/.codex/AGENTS.md`
+- 项目说明文件：`AGENTS.md`
+- 也可以通过 `config.toml` 里的 `skills.config` 指向 `SKILL.md` 所在目录
+- 当前官方约定不是 `.codex/skills/`
 
 ### Skill 调用
 ```

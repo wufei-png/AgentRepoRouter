@@ -17,6 +17,11 @@ Read `references/repo_mappings.json` for configuration.
 | Claude Code (sub-agent) | `claude --agent <name> "task"` | `cd /path && claude --agent <name> "task"` |
 | OpenCode                | `opencode run "task"`          | `cd /path && opencode run "task"`          |
 | Cursor                  | `agent -p "task"`              | `cd /path && agent -p "task"`              |
+| Codex                   | `codex exec "task"`            | `cd /path && codex exec "task"`            |
+
+> **Important**: The Cursor CLI binary is `agent`, not `cursor agent`. Because `agent` is a very generic name, models often miswrite `cursor agent -p`, but that command is wrong; for Cursor CLI, always call `agent -p "task"` directly.
+>
+> **Additional note**: Codex also officially supports `codex exec -C /path/to/repo "task"`. The Router documentation still uses `cd /path && ...` so all CLI examples follow one pattern.
 
 ## Custom Agent Paths
 
@@ -27,6 +32,19 @@ Read `references/repo_mappings.json` for configuration.
 | Cursor      | `~/.cursor/agents/`          | `<repo>/.cursor/agents/`   | ❌                  | ✅ `use agent xxx` |
 
 > **Note**: Cursor and OpenCode custom agents can only be invoked via **prompt**, not CLI arguments.
+
+### Codex Custom Agents and Skills
+
+- Global config: `~/.codex/config.toml`
+- Project config: `<repo>/.codex/config.toml`
+- Global custom agents: `~/.codex/agents/*.toml`
+- Project custom agents: `<repo>/.codex/agents/*.toml`
+- Global skills: `$HOME/.agents/skills/`
+- Project skills: `<repo>/.agents/skills/`
+- Global instructions: `~/.codex/AGENTS.md`
+- Project instructions: `AGENTS.md`
+- Additional skills can also be declared via `skills.config` paths in `config.toml`
+- The current official convention is not `.codex/skills/`
 
 ## Agent and Skill Invocation Rules
 
@@ -101,6 +119,9 @@ cd /path/to/repo && claude --agent bugfix "task description"
 
 # OpenCode / Cursor (prompt-based agent)
 cd /path/to/repo && opencode run "use agent xxx to do: task description"
+
+# Codex
+cd /path/to/repo && codex exec "task description"
 
 # Skill invocation (unified format)
 cd /path/to/repo && opencode run "use skill <skill-name> to solve: task description"

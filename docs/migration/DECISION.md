@@ -23,7 +23,7 @@ install.sh → OpenClaw Skill (运行时)
 | Claude Code | `claude "task"` / `claude -p "task"` |
 | OpenCode | `opencode run "task"` |
 | Cursor | `agent -p "task"` |
-| Codex | `codex "task"` |
+| Codex | `codex exec "task"` |
 
 **原因**：
 - acpx 不支持 Cursor

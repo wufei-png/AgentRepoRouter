@@ -1,12 +1,12 @@
 # OrchAI
 
-AI Coding Agent Orchestrator via OpenClaw Skill
+AI coding agent orchestration via an OpenClaw Router Skill.
 
 ## Quick Start
 
 ```bash
-# Install
-curl -fsSL https://.../install.sh | bash
+# Install from GitHub
+curl -fsSL https://raw.githubusercontent.com/wufei-png/OrchAI/main/scripts/install.sh | bash
 
 # Or local install
 bash scripts/install.sh
@@ -14,45 +14,52 @@ bash scripts/install.sh
 # Edit config
 vim ~/.openclaw/skills/router/references/repo_mappings.json
 
-# Start
+# Start OpenClaw
 openclaw
 ```
 
-## Architecture
+## What Exists Today
 
+- `scripts/install.sh` checks Node.js 18+, Git, and OpenClaw
+- The installer lets you choose language and supported CLIs
+- Project discovery supports auto scan and manual absolute paths
+- The installer writes `~/.openclaw/skills/router/references/repo_mappings.json`
+- The selected router variant is deployed as `~/.openclaw/skills/router/SKILL.md`
+
+## Runtime Shape
+
+```text
+User -> OpenClaw -> Router Skill -> cd into repo -> direct CLI
 ```
-User → OpenClaw → Router Skill → Agent (direct CLI)
-```
 
-## Features
+## Supported CLIs
 
-- **Direct CLI**: No middle protocol layer
-- **Intelligent Routing**: LLM-based task classification
-- **Multi-Agent Support**: claude-code, opencode, cursor, codex
-- **Project Isolation**: Each project has independent workspace
-- **Bilingual**: install.sh deploys the selected language as `SKILL.md`
+| CLI | Non-interactive task command | Project or custom config |
+| --- | --- | --- |
+| Claude Code | `claude -p "task"` | `~/.claude/agents/`, `<repo>/.claude/agents/` |
+| OpenCode | `opencode run "task"` | `~/.config/opencode/agents/`, `<repo>/.opencode/agents/` |
+| Cursor | `agent -p "task"` | `~/.cursor/agents/`, `<repo>/.cursor/agents/` |
+| Codex | `codex exec "task"` | `~/.codex/config.toml`, `.codex/config.toml`, `~/.codex/agents/`, `.codex/agents/`, `.agents/skills/`, `AGENTS.md` |
+
+Codex also supports `codex exec -C /path/to/repo "task"` officially. OrchAI documentation still uses `cd /path && ...` examples so the routing pattern stays uniform across CLIs.
 
 ## Example
 
 ```bash
-# Router decides: test-backend + Claude Code
+# Claude Code
 cd tests/repos/test-backend && claude -p "fix login bug"
 
-# Or with OpenCode
+# OpenCode
 cd tests/repos/test-docs && opencode run "write documentation"
+
+# Codex
+cd tests/repos/test-backend && codex exec "review the auth flow"
 ```
-
-## Supported Agents
-
-| Agent       | Command               | Custom Agent Path            |
-| ----------- | --------------------- | ---------------------------- |
-| Claude Code | `claude -p "task"`    | `~/.claude/agents/`          |
-| OpenCode    | `opencode run "task"` | `~/.config/opencode/agents/` |
-| Cursor      | `agent -p "task"`     | `~/.cursor/agents/`          |
 
 ## Documentation
 
 - [CLAUDE.md](CLAUDE.md) - Full project context
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - System architecture
-- [docs/plans/migration/plan.md](docs/plans/migration/plan.md) - Migration plan
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - Current architecture and runtime conventions
+- [docs/PRODUCT.md](docs/PRODUCT.md) - Future roadmap, not current implementation
+- [docs/plans/migration/plan.md](docs/plans/migration/plan.md) - Migration history and implementation plan
 - [legacy/README.md](legacy/README.md) - Archived legacy materials
