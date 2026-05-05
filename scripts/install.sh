@@ -671,8 +671,12 @@ deploy_skill() {
     local script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     local skill_zh="$script_dir/../skills/router/SKILL.zh.md"
     local skill_en="$script_dir/../skills/router/SKILL.en.md"
+    local references_src_dir="$script_dir/../skills/router/references"
     local skill_dest_dir="$ROUTER_SKILL_DIR"
     local skill_dest="$skill_dest_dir/SKILL.md"
+    local references_dest_dir="$skill_dest_dir/references"
+    local reference_path=""
+    local reference_name=""
 
     # 验证源文件存在
     if [ ! -f "$skill_zh" ] || [ ! -f "$skill_en" ]; then
@@ -683,7 +687,7 @@ deploy_skill() {
 
     # 创建目标目录
     mkdir -p "$skill_dest_dir"
-    mkdir -p "$skill_dest_dir/references"
+    mkdir -p "$references_dest_dir"
 
     # 根据语言选择部署
     if [ "$SKILL_LANG" = "zh" ]; then
@@ -694,6 +698,32 @@ deploy_skill() {
         cp "$skill_en" "$skill_dest"
         rm -f "$skill_dest_dir/SKILL.zh.md" "$skill_dest_dir/SKILL.en.md" 2>/dev/null || true
         echo -e "${GREEN}✓ Deployed English version of Router Skill${NC}"
+    fi
+
+    # 同步 references 中的文档，不覆盖运行时生成的 repo_mappings.json
+    if [ -d "$references_src_dir" ]; then
+        find "$references_src_dir" -maxdepth 1 -type f ! -name "repo_mappings.json" | while IFS= read -r reference_path; do
+            reference_name="$(basename "$reference_path")"
+            case "$reference_name" in
+                *.zh.md)
+                    if [ "$SKILL_LANG" = "zh" ]; then
+                        cp "$reference_path" "$references_dest_dir/"
+                    else
+                        rm -f "$references_dest_dir/$reference_name"
+                    fi
+                    ;;
+                *.en.md)
+                    if [ "$SKILL_LANG" = "en" ]; then
+                        cp "$reference_path" "$references_dest_dir/"
+                    else
+                        rm -f "$references_dest_dir/$reference_name"
+                    fi
+                    ;;
+                *)
+                    cp "$reference_path" "$references_dest_dir/"
+                    ;;
+            esac
+        done
     fi
 
     echo ""

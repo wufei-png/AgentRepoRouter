@@ -28,6 +28,8 @@ def test_manual_install_deploys_skill_and_config_into_router_directory(tmp_path)
     assert result.returncode == 0, result.stdout + result.stderr
     assert deployed_skill_path(home_dir).exists()
     assert deployed_config_path(home_dir).exists()
+    assert (deployed_skill_path(home_dir).parent / "references" / "guide.zh.md").exists()
+    assert not (deployed_skill_path(home_dir).parent / "references" / "guide.en.md").exists()
     assert not (home_dir / ".orchai" / "repo_mappings.json").exists()
 
     deployed_config = load_deployed_config(home_dir)

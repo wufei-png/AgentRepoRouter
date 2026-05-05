@@ -41,3 +41,5 @@ def test_english_selection_deploys_only_skill_md(tmp_path):
     assert "Route coding tasks to appropriate repos and agents" in skill_path.read_text()
     assert not (skill_path.parent / "SKILL.zh.md").exists()
     assert not (skill_path.parent / "SKILL.en.md").exists()
+    assert (skill_path.parent / "references" / "guide.en.md").exists()
+    assert not (skill_path.parent / "references" / "guide.zh.md").exists()
