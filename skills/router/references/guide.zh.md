@@ -55,12 +55,18 @@
 ### 项目级优先
 
 - 先看目标 repo 内的自定义 skill / agent。
+- 如果 `repo_mappings.json` 的 `skills` 字段已经列出了该 repo 的 project-level skill 摘要，先把这些摘要当作路由强提示。
 - 如果项目级同时命中 skill 和 agent，优先保留 skill，再决定是否把 agent 一并带上。
 
 ### 全局级保守
 
 - 全局 skill / agent 只在名称高度一致、职责强匹配、或用户明确点名时使用。
 - 弱相关时，不要为了“看起来有帮助”就强行注入。
+
+### aliases
+
+- `aliases` 是 repo 的可选别名数组，默认可以为空。
+- 如果用户说的是 repo alias 而不是正式目录名，把 alias 视为强 repo 命中信号。
 
 ### Fallback
 

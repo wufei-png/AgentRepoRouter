@@ -49,6 +49,7 @@ install.sh → OpenClaw Skill (运行时)
 Skill.md 读取 `repo_mappings.json` 了解项目列表，根据任务内容决定：
 - 用哪个 Agent
 - 在哪个项目执行
+- 是否优先考虑 repo 中已检测到的 project-level skill
 
 ### 4. Skill.md 职责
 
@@ -103,7 +104,15 @@ OpenClaw Skill (`router/SKILL.md`) 负责：
     {
       "name": "my-backend",
       "path": "/path/to/backend",
-      "type": "backend"
+      "aliases": ["backend", "api"],
+      "skills": {
+        "claude-code": [
+          {
+            "name": "build_and_test",
+            "description": "Run build and tests before finishing changes."
+          }
+        ]
+      }
     }
   ]
 }
@@ -121,7 +130,7 @@ OpenClaw Skill (`router/SKILL.md`) 负责：
 | config.py | repo_mappings.json |
 | cli.py/init.py | install.sh |
 
-**结果**：~1000 行 Python 代码 → ~300 行 Shell + Skill Markdown
+**结果**：旧的 Python runtime 被 Shell installer + Skill Markdown 替代
 
 ---
 

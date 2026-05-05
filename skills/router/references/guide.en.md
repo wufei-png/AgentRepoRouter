@@ -55,12 +55,18 @@ This reference document holds the longer Router conventions. The runtime-facing 
 ### Project-level first
 
 - Check custom project skills and agents inside the target repo before looking anywhere global.
+- If `repo_mappings.json` already lists project-level skill summaries in `skills`, treat those summaries as strong routing hints first.
 - If a project-level skill and agent both match, keep the skill first, then decide whether the agent should also be attached.
 
 ### Conservative global matching
 
 - Use a global skill or agent only when the name is highly specific, the responsibility is strongly aligned, or the user explicitly names it.
 - Do not inject global helpers on weak similarity.
+
+### aliases
+
+- `aliases` is an optional repo nickname array and can stay empty by default.
+- If the user names a repo alias instead of the directory name, treat the alias as a strong repo match.
 
 ### Fallback
 

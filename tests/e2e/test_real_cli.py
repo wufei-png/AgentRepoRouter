@@ -26,6 +26,7 @@ def test_auto_scan_reprompts_when_root_directory_is_invalid(tmp_path):
         {
             "name": "demo-repo",
             "path": str((valid_root / "demo-repo").resolve()),
-            "type": "backend",
+            "aliases": [],
+            "skills": {},
         }
     ]

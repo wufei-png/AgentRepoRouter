@@ -44,10 +44,21 @@ def validate_repo_mappings_file(config_path: Path) -> None:
 
 
 def write_repo_mappings(config_path: Path, agents: list[str], repos: list[dict]) -> dict:
+    normalized_repos = []
+    for repo in repos:
+        normalized_repos.append(
+            {
+                "name": repo["name"],
+                "path": repo["path"],
+                "aliases": repo.get("aliases", []),
+                "skills": repo.get("skills", {}),
+            }
+        )
+
     payload = {
         "schemaVersion": REPO_MAPPINGS_SCHEMA_VERSION,
         "agents": agents,
-        "repos": repos,
+        "repos": normalized_repos,
     }
     config_path.parent.mkdir(parents=True, exist_ok=True)
     config_path.write_text(json.dumps(payload, indent=2) + "\n")
@@ -90,13 +101,17 @@ def auto_scan_input(language: str, clis: str, scan_root: str) -> str:
 def make_fake_bin(tmp_path: Path, available: set[str], node_version: str = "v24.13.0") -> Path:
     bin_dir = tmp_path / "fake-bin"
     bin_dir.mkdir()
+    real_node = shutil.which("node")
+    if real_node is None:
+        raise AssertionError("node is required to build the fake bin test environment")
 
     scripts = {
         "node": f"""#!/bin/sh
 if [ "$1" = "-v" ]; then
   echo "{node_version}"
+  exit 0
 fi
-exit 0
+exec "{real_node}" "$@"
 """,
         "git": "#!/bin/sh\nexit 0\n",
         "openclaw": "#!/bin/sh\nexit 0\n",

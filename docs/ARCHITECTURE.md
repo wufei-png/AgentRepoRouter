@@ -41,6 +41,7 @@
 
 ### Router Skill
 - 读取 `references/repo_mappings.json` 获取配置
+- 利用 repo 的 `aliases` 和已检测的 `skills` 摘要辅助判断
 - LLM 判断任务类型
 - 选择合适的 Agent
 - 执行 CLI 命令
@@ -56,7 +57,15 @@
     {
       "name": "my-backend",
       "path": "/path/to/backend",
-      "type": "backend"
+      "aliases": ["backend", "api"],
+      "skills": {
+        "claude-code": [
+          {
+            "name": "build_and_test",
+            "description": "Run build and tests before finishing changes."
+          }
+        ]
+      }
     }
   ]
 }

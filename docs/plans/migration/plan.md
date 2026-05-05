@@ -103,7 +103,15 @@ use skill <skill-name> to solve the following task: <task description>
     {
       "name": "my-backend",
       "path": "/path/to/backend",
-      "type": "backend"
+      "aliases": ["backend", "api"],
+      "skills": {
+        "claude-code": [
+          {
+            "name": "build_and_test",
+            "description": "Run build and tests before finishing changes."
+          }
+        ]
+      }
     }
   ]
 }
@@ -161,7 +169,15 @@ install.sh
     {
       "name": "my-backend",
       "path": "/path/to/backend",
-      "type": "backend"
+      "aliases": ["backend", "api"],
+      "skills": {
+        "claude-code": [
+          {
+            "name": "build_and_test",
+            "description": "Run build and tests before finishing changes."
+          }
+        ]
+      }
     }
   ]
 }

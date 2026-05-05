@@ -271,12 +271,12 @@ normalize_path() {
     )
 }
 
-repo_name_exists() {
-    local repo_name="$1"
+repo_path_exists() {
+    local repo_path="$1"
     local existing_path
 
     for existing_path in "${REPOS[@]}"; do
-        if [ "$(basename "$existing_path")" = "$repo_name" ]; then
+        if [ "$existing_path" = "$repo_path" ]; then
             return 0
         fi
     done
@@ -522,9 +522,9 @@ auto_scan() {
         repo_path=$(normalize_path "$(dirname "$git_dir")")
         repo_name=$(basename "$repo_path")
 
-        # 跳过重复项目名
-        if repo_name_exists "$repo_name"; then
-            echo -e "${YELLOW}Warning: Duplicate project name filtered: $repo_name${NC}"
+        # 跳过重复项目路径
+        if repo_path_exists "$repo_path"; then
+            echo -e "${YELLOW}Warning: Duplicate project path filtered: $repo_path${NC}"
             continue
         fi
 
@@ -547,8 +547,6 @@ manual_input() {
     echo ""
 
     REPOS=()
-    local seen=()
-
     while true; do
         read_user_line "Path: "
         repo_path="$REPLY"
@@ -570,13 +568,12 @@ manual_input() {
         repo_path=$(normalize_path "$repo_path")
         repo_name=$(basename "$repo_path")
 
-        # 检查重复项目名
-        if array_contains "$repo_name" "${seen[@]}"; then
-            echo -e "${YELLOW}Warning: Duplicate project name filtered: $repo_name${NC}"
+        # 检查重复项目路径
+        if repo_path_exists "$repo_path"; then
+            echo -e "${YELLOW}Warning: Duplicate project path filtered: $repo_path${NC}"
             continue
         fi
 
-        seen+=("$repo_name")
         REPOS+=("$repo_path")
         echo -e "  ${GREEN}✓${NC} Added: $repo_path"
     done
@@ -691,46 +688,139 @@ generate_config() {
     # 创建目录
     mkdir -p "$(dirname "$ROUTER_CONFIG_PATH")"
 
-    # 构建 JSON
-    local agents_json=$(printf '"%s",' "${SELECTED_CLIS[@]}" | sed 's/,$//')
-    local repos_json=""
-    local repo_entry=""
+    local repo_list_file=""
+    repo_list_file="$(mktemp)"
+    printf '%s\n' "${REPOS[@]}" > "$repo_list_file"
 
-    for i in "${!REPOS[@]}"; do
-        repo_path="${REPOS[$i]}"
-        repo_name=$(basename "$repo_path")
+    node - "$ROUTER_CONFIG_PATH" "$REPO_MAPPINGS_SCHEMA_VERSION" "$repo_list_file" "${SELECTED_CLIS[@]}" <<'EOF'
+const fs = require("node:fs");
+const path = require("node:path");
 
-        # 简单的类型推断
-        local repo_type="backend"
-        if [[ "$repo_name" == *"doc"* ]]; then
-            repo_type="docs"
-        elif [[ "$repo_name" == *"front"* || "$repo_name" == *"web"* ]]; then
-            repo_type="frontend"
-        fi
+const [, , configPath, schemaVersionRaw, repoListPath, ...selectedClis] = process.argv;
 
-        repo_entry="    {
-      \"name\": \"$repo_name\",
-      \"path\": \"$repo_path\",
-      \"type\": \"$repo_type\"
-    }"
+const SKILL_LOCATIONS = {
+  "claude-code": path.join(".claude", "skills"),
+  "opencode": path.join(".opencode", "skills"),
+  codex: path.join(".agents", "skills"),
+};
 
-        if [ -n "$repos_json" ]; then
-            repos_json="$repos_json,
-$repo_entry"
-        else
-            repos_json="$repo_entry"
-        fi
-    done
+function splitFrontmatter(content) {
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
+  if (!match) {
+    return { frontmatter: "", body: content };
+  }
 
-    cat > "$ROUTER_CONFIG_PATH" <<EOF
-{
-  "schemaVersion": $REPO_MAPPINGS_SCHEMA_VERSION,
-  "agents": [$agents_json],
-  "repos": [
-$repos_json
-  ]
+  return {
+    frontmatter: match[1],
+    body: content.slice(match[0].length),
+  };
 }
+
+function parseFrontmatterValue(frontmatter, key) {
+  const match = frontmatter.match(new RegExp(`^${key}:\\s*(.+)$`, "m"));
+  if (!match) {
+    return "";
+  }
+
+  let value = match[1].trim();
+  if (
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
+    value = value.slice(1, -1);
+  }
+
+  return value.trim();
+}
+
+function inferDescription(body, fallbackName) {
+  const lines = body.split(/\r?\n/);
+  let inCodeBlock = false;
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (line.startsWith("```")) {
+      inCodeBlock = !inCodeBlock;
+      continue;
+    }
+    if (inCodeBlock || line === "") {
+      continue;
+    }
+    if (
+      line.startsWith("#") ||
+      line.startsWith(">") ||
+      /^[-*]\s/.test(line)
+    ) {
+      continue;
+    }
+    return line;
+  }
+
+  return `Project skill ${fallbackName}.`;
+}
+
+function extractSkillMetadata(skillFilePath, fallbackName) {
+  const content = fs.readFileSync(skillFilePath, "utf8");
+  const { frontmatter, body } = splitFrontmatter(content);
+  const name = parseFrontmatterValue(frontmatter, "name") || fallbackName;
+  const description =
+    parseFrontmatterValue(frontmatter, "description") ||
+    inferDescription(body, name);
+
+  return { name, description };
+}
+
+function detectRepoSkills(repoPath) {
+  const detectedSkills = {};
+
+  for (const [cliName, relativeDir] of Object.entries(SKILL_LOCATIONS)) {
+    const skillRoot = path.join(repoPath, relativeDir);
+    if (!fs.existsSync(skillRoot) || !fs.statSync(skillRoot).isDirectory()) {
+      continue;
+    }
+
+    const skills = fs
+      .readdirSync(skillRoot, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .sort((left, right) => left.localeCompare(right))
+      .flatMap((entryName) => {
+        const skillFilePath = path.join(skillRoot, entryName, "SKILL.md");
+        if (!fs.existsSync(skillFilePath) || !fs.statSync(skillFilePath).isFile()) {
+          return [];
+        }
+        return [extractSkillMetadata(skillFilePath, entryName)];
+      });
+
+    if (skills.length > 0) {
+      detectedSkills[cliName] = skills;
+    }
+  }
+
+  return detectedSkills;
+}
+
+const repoPaths = fs
+  .readFileSync(repoListPath, "utf8")
+  .split(/\r?\n/)
+  .map((line) => line.trim())
+  .filter(Boolean);
+
+const payload = {
+  schemaVersion: Number(schemaVersionRaw),
+  agents: selectedClis,
+  repos: repoPaths.map((repoPath) => ({
+    name: path.basename(repoPath),
+    path: repoPath,
+    aliases: [],
+    skills: detectRepoSkills(repoPath),
+  })),
+};
+
+fs.writeFileSync(configPath, `${JSON.stringify(payload, null, 2)}\n`);
 EOF
+
+    rm -f "$repo_list_file"
 
     validate_repo_mappings "$ROUTER_CONFIG_PATH"
 
@@ -826,7 +916,7 @@ main() {
     echo "Next steps:"
     echo "  1. Run 'openclaw' to start"
     echo "  2. The router skill will help route tasks"
-    echo "  3. Edit $ROUTER_CONFIG_PATH to manage projects"
+    echo "  3. Edit $ROUTER_CONFIG_PATH to add repo aliases or review detected skills"
     echo ""
 }
 

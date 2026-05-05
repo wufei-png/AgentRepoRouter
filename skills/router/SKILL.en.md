@@ -5,7 +5,7 @@ description: "Route coding tasks to appropriate repos and agents. Use when user 
 
 # Router Skill
 
-Read `references/repo_mappings.json` for the repo list and default agents order.
+Read `references/repo_mappings.json` for the repo list, repo aliases, detected project-level skills, and default agents order.
 
 See `references/guide.en.md` for detailed CLI conventions, path conventions, and longer examples.
 
@@ -13,9 +13,10 @@ See `references/guide.en.md` for detailed CLI conventions, path conventions, and
 
 1. Determine the target repo first.
    - If the user explicitly names a project, prefer that project.
-   - Otherwise choose the best repo from `repo_mappings.json`.
+   - Otherwise choose the best repo from `repo_mappings.json` using the repo name, task context, and any configured `aliases`.
    - Only ask the user when there is no reliable repo choice.
 2. Check project-level Skills and Agents inside the chosen repo first.
+   - If the repo `skills` field already lists a relevant project-level skill and description for a CLI, treat that as a strong hint.
    - Use each CLI's native conventions when looking for project-level assets.
    - See `references/guide.en.md` for the concrete paths and caveats.
 3. Only if project-level assets do not match reliably, consider global Skills and Agents.
@@ -52,7 +53,7 @@ use skill <skill-name> to solve the following task: <task description>
 
 The configuration file defines only:
 
-- `repos`: the candidate projects for routing
+- `repos`: the candidate projects for routing, plus optional aliases and detected skills
 - `agents`: the default fallback order
 
 ```json
@@ -63,7 +64,15 @@ The configuration file defines only:
     {
       "name": "project-name",
       "path": "/path/to/project",
-      "type": "backend"
+      "aliases": ["project", "backend"],
+      "skills": {
+        "claude-code": [
+          {
+            "name": "build_and_test",
+            "description": "Run build and tests before finishing changes."
+          }
+        ]
+      }
     }
   ]
 }

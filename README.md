@@ -23,6 +23,7 @@ openclaw
 - `scripts/install.sh` checks Node.js 18+, Git, and OpenClaw
 - The installer lets you choose language and supported CLIs
 - Project discovery supports auto scan and manual absolute paths
+- The generated repo config includes empty `aliases` plus detected project skill summaries
 - The installer writes `~/.openclaw/skills/router/references/repo_mappings.json`
 - The selected router variant is deployed as `~/.openclaw/skills/router/SKILL.md`
 

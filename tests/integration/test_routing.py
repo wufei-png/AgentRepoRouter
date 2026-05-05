@@ -40,12 +40,65 @@ def test_manual_install_deploys_skill_and_config_into_router_directory(tmp_path)
             {
                 "name": "OrchAI",
                 "path": str(PROJECT_ROOT),
-                "type": "backend",
+                "aliases": [],
+                "skills": {},
             }
         ],
     }
 
     assert "读取 `references/repo_mappings.json`" in deployed_skill_path(home_dir).read_text()
+
+
+def test_manual_install_extracts_detected_project_skills(tmp_path):
+    home_dir = tmp_path / "home"
+    fake_bin = make_fake_bin(
+        tmp_path,
+        {"node", "git", "openclaw", "claude", "opencode"},
+    )
+    backend_repo = PROJECT_ROOT / "tests" / "repos" / "test-backend"
+    docs_repo = PROJECT_ROOT / "tests" / "repos" / "test-docs"
+
+    result = run_install(
+        home_dir,
+        manual_install_input("1", "1,2", [str(backend_repo), str(docs_repo)]),
+        with_fake_path(fake_bin),
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert load_deployed_config(home_dir)["repos"] == [
+        {
+            "name": "test-backend",
+            "path": str(backend_repo),
+            "aliases": [],
+            "skills": {
+                "claude-code": [
+                    {
+                        "name": "build_and_test",
+                        "description": (
+                            "Build and test skill. Use when task involves building, "
+                            "testing, or running CI/CD pipelines."
+                        ),
+                    }
+                ]
+            },
+        },
+        {
+            "name": "test-docs",
+            "path": str(docs_repo),
+            "aliases": [],
+            "skills": {
+                "opencode": [
+                    {
+                        "name": "doc_writer",
+                        "description": (
+                            "Documentation writing skill. Use when task involves "
+                            "writing or updating documentation."
+                        ),
+                    }
+                ]
+            },
+        },
+    ]
 
 
 def test_existing_router_directory_can_be_deleted_and_overwritten(tmp_path):

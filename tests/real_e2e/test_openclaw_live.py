@@ -71,8 +71,8 @@ def test_docs_question_is_answered_correctly_live(tmp_path, real_e2e_config):
     initialize_git_repo(docs_repo)
 
     repos = [
-        {"name": "test-backend", "path": str(backend_repo), "type": "backend"},
-        {"name": "test-docs", "path": str(docs_repo), "type": "docs"},
+        {"name": "test-backend", "path": str(backend_repo), "aliases": [], "skills": {}},
+        {"name": "test-docs", "path": str(docs_repo), "aliases": [], "skills": {}},
     ]
     task = "what is the deployment process in test-docs?"
     message = f"use skill router to solve the following task: {task}"
@@ -121,8 +121,8 @@ def test_backend_bugfix_completes_successfully_live(tmp_path, real_e2e_config):
     initialize_git_repo(docs_repo)
 
     repos = [
-        {"name": "test-backend", "path": str(backend_repo), "type": "backend"},
-        {"name": "test-docs", "path": str(docs_repo), "type": "docs"},
+        {"name": "test-backend", "path": str(backend_repo), "aliases": [], "skills": {}},
+        {"name": "test-docs", "path": str(docs_repo), "aliases": [], "skills": {}},
     ]
     task = (
         "fix the login bug in test-backend so invalid passwords are rejected, "

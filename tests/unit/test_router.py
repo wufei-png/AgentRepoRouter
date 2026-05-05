@@ -38,7 +38,18 @@ def test_reference_repo_mappings_matches_current_schema():
     assert data["schemaVersion"] == 1
     assert "language" not in data
     assert data["agents"] == ["claude-code", "opencode", "cursor", "codex"]
-    assert all(set(repo.keys()) == {"name", "path", "type"} for repo in data["repos"])
+    assert all(set(repo.keys()) == {"name", "path", "aliases", "skills"} for repo in data["repos"])
+    assert data["repos"][0]["aliases"] == ["backend", "api"]
+    assert data["repos"][0]["skills"] == {
+        "claude-code": [
+            {
+                "name": "build_and_test",
+                "description": "Run build and tests before finishing changes.",
+            }
+        ]
+    }
+    assert data["repos"][1]["aliases"] == []
+    assert data["repos"][1]["skills"] == {}
 
 
 def test_legacy_repo_mappings_file_has_been_removed():

@@ -5,7 +5,7 @@ description: "路由编码任务到合适的仓库和 Agent。当用户想要在
 
 # Router Skill
 
-读取 `references/repo_mappings.json` 获取仓库列表和默认 agents 顺序。
+读取 `references/repo_mappings.json` 获取仓库列表、repo aliases、已检测的 project-level skills，以及默认 agents 顺序。
 
 详细 CLI 约定、路径约定和更多示例见 `references/guide.zh.md`。
 
@@ -13,9 +13,10 @@ description: "路由编码任务到合适的仓库和 Agent。当用户想要在
 
 1. 先确定目标 repo。
    - 如果用户已经明确指定项目，优先使用用户指定项目。
-   - 如果未指定，再根据任务内容从 `repo_mappings.json` 的 repos 中选择最合适的项目。
+   - 如果未指定，再根据任务内容、repo name、以及 `aliases` 从 `repo_mappings.json` 的 repos 中选择最合适的项目。
    - 只有在没有可靠项目时才询问用户，不要过早提问。
 2. 在目标 repo 内先检查项目级 Skill 和 Agent。
+   - 如果 `skills` 字段已经列出了某个 CLI 下的 project-level skill 及 description，把它当作强提示。
    - 按对应 CLI 的原生约定检查项目级资产。
    - 具体路径和命令细节见 `references/guide.zh.md`。
 3. 项目级未命中时，再考虑全局 Skill 和 Agent。
@@ -51,7 +52,7 @@ use skill <skill-name> to solve the following task: <task description>
 
 配置文件只定义两件事：
 
-- `repos`: 可供路由选择的项目列表
+- `repos`: 可供路由选择的项目列表，以及可选 aliases 与已检测 skills
 - `agents`: 默认 fallback 顺序
 
 ```json
@@ -62,7 +63,15 @@ use skill <skill-name> to solve the following task: <task description>
     {
       "name": "project-name",
       "path": "/path/to/project",
-      "type": "backend"
+      "aliases": ["project", "backend"],
+      "skills": {
+        "claude-code": [
+          {
+            "name": "build_and_test",
+            "description": "Run build and tests before finishing changes."
+          }
+        ]
+      }
     }
   ]
 }
