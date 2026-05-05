@@ -1,5 +1,7 @@
 # ClawRouter
 
+[中文版](README_CN.md) | English
+
 Repo-aware routing for AI coding CLIs through an OpenClaw Router Skill.
 
 ClawRouter turns OpenClaw into a unified entry point for Claude Code, OpenCode, Cursor, and Codex. It does not replace those CLIs. It routes tasks to the right repo, preserves each CLI's native agent and skill conventions, and uses structured repo metadata to improve navigation.
@@ -144,13 +146,13 @@ The projects below are good comparison points, but they optimize for different l
 
 | Project | Primary role | Execution model | What it optimizes for | How it differs from ClawRouter |
 | --- | --- | --- | --- | --- |
-| ClawRouter | Repo-aware routing layer inside OpenClaw | One OpenClaw skill chooses repo, skill, agent, and CLI, then calls the native CLI directly | Unified entry and predictable routing across multiple coding CLIs | Focuses on routing and native convention preservation instead of full orchestration |
-| OpenClaw | Local-first personal assistant and control plane | Sessions, channels, skills, tools, and agents under one assistant runtime | Communication surfaces, sessions, skills, local-first assistant behavior | ClawRouter is a coding-focused skill on top of OpenClaw, not a replacement |
-| MCO | Parallel multi-CLI orchestration | Dispatch the same prompt to multiple coding CLIs and synthesize the results | Fan-out review, consensus, multi-model comparison | ClawRouter chooses one best-fit path first; MCO is better when you want parallel review or consensus |
-| agtx | Multi-agent task board and lifecycle manager | Kanban board, tmux sessions, worktrees, and orchestration agent | Persistent task flow across many agent sessions | ClawRouter is much lighter and does not own task boards or worktree lifecycles |
-| Agent Orchestrator | Autonomous PR and CI workflow automation | Dashboard plus agents in isolated worktrees reacting to CI and review feedback | Ticket-to-PR automation at scale | ClawRouter stays as a routing layer and avoids taking over the whole delivery lifecycle |
-| metaswarm | Opinionated SDLC orchestration framework | Multi-phase workflow, many personas, review gates, recursive orchestration | Strong process control and self-improving delivery loops | ClawRouter is less opinionated, simpler to adopt, and easier to layer onto an existing OpenClaw setup |
-| burn-harness | Continuous developer task queue for coding agents | Background loop pulls tasks, executes work, creates draft PRs, retries failures | Non-stop task throughput | ClawRouter is interactive and routing-oriented rather than a background worker queue |
+| [ClawRouter](https://github.com/wufei-png/ClawRouter) | Repo-aware routing layer inside OpenClaw | One OpenClaw skill chooses repo, skill, agent, and CLI, then calls the native CLI directly | Unified entry and predictable routing across multiple coding CLIs | Focuses on routing and native convention preservation instead of full orchestration |
+| [OpenClaw](https://github.com/openclaw/openclaw) | Local-first personal assistant and control plane | Sessions, channels, skills, tools, and agents under one assistant runtime | Communication surfaces, sessions, skills, local-first assistant behavior | ClawRouter is a coding-focused skill on top of OpenClaw, not a replacement |
+| [MCO](https://github.com/mco-org/mco) | Parallel multi-CLI orchestration | Dispatch the same prompt to multiple coding CLIs and synthesize the results | Fan-out review, consensus, multi-model comparison | ClawRouter chooses one best-fit path first; MCO is better when you want parallel review or consensus |
+| [agtx](https://github.com/fynnfluegge/agtx) | Multi-agent task board and lifecycle manager | Kanban board, tmux sessions, worktrees, and orchestration agent | Persistent task flow across many agent sessions | ClawRouter is much lighter and does not own task boards or worktree lifecycles |
+| [Agent Orchestrator](https://github.com/ComposioHQ/agent-orchestrator) | Autonomous PR and CI workflow automation | Dashboard plus agents in isolated worktrees reacting to CI and review feedback | Ticket-to-PR automation at scale | ClawRouter stays as a routing layer and avoids taking over the whole delivery lifecycle |
+| [metaswarm](https://github.com/dsifry/metaswarm) | Opinionated SDLC orchestration framework | Multi-phase workflow, many personas, review gates, recursive orchestration | Strong process control and self-improving delivery loops | ClawRouter is less opinionated, simpler to adopt, and easier to layer onto an existing OpenClaw setup |
+| [burn-harness](https://github.com/bkmashiro/burn-harness) | Continuous developer task queue for coding agents | Background loop pulls tasks, executes work, creates draft PRs, retries failures | Non-stop task throughput | ClawRouter is interactive and routing-oriented rather than a background worker queue |
 
 ## Highlights
 

@@ -26,7 +26,7 @@ The user is saying that when they run `python3 tests/unit/test_router.py`, there
 ---
 
 <tool-use data-tool-type="read" data-tool-name="read_file_v2">
-<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/ClawRouter/tests/unit/test_router.py</summary>
+<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/OrchAI/tests/unit/test_router.py</summary>
 
 </details>
 </tool-use>
@@ -34,7 +34,7 @@ The user is saying that when they run `python3 tests/unit/test_router.py`, there
 ---
 
 <tool-use data-tool-type="read" data-tool-name="read_file_v2">
-<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/ClawRouter/tests/README.md</summary>
+<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/OrchAI/tests/README.md</summary>
 
 </details>
 </tool-use>
@@ -66,7 +66,7 @@ Parameters:
 ```json
 {
   "pattern": "pytest",
-  "path": "/home/wufei/github.com/wufei-png/ClawRouter",
+  "path": "/home/wufei/github.com/wufei-png/OrchAI",
   "glob": "*requirements*",
   "caseInsensitive": false
 }
@@ -77,7 +77,7 @@ Additional data:
 {
   "isPruned": true,
   "pattern": "pytest",
-  "path": "/home/wufei/github.com/wufei-png/ClawRouter",
+  "path": "/home/wufei/github.com/wufei-png/OrchAI",
   "outputMode": "content",
   "totalFiles": 1,
   "totalMatches": 1,
@@ -101,7 +101,7 @@ Status: **completed**
 <details>
 <summary>Tool use: **glob_file_search** • Searched codebase "undefined" • **1** result in **1** directory</summary>
 
-Directory: **/home/wufei/github.com/wufei-png/ClawRouter** (1 file)
+Directory: **/home/wufei/github.com/wufei-png/OrchAI** (1 file)
 
 | File |
 |------|
@@ -126,7 +126,7 @@ Let me check pyproject.toml for dev dependencies (pytest).
 ---
 
 <tool-use data-tool-type="read" data-tool-name="read_file_v2">
-<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/ClawRouter/pyproject.toml</summary>
+<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/OrchAI/pyproject.toml</summary>
 
 </details>
 </tool-use>
@@ -148,7 +148,7 @@ pytest is already in dependencies. I just need to update the README to use `pyte
 
 <tool-use data-tool-type="write" data-tool-name="edit_file_v2">
 
-<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/ClawRouter/tests/README.md</summary>
+<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/OrchAI/tests/README.md</summary>
 
 </details>
 
@@ -170,10 +170,10 @@ Good. Let me run the tests to confirm they pass and produce output.
 ---
 
 <tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2">
-<details><summary>Tool use: **run_terminal_command_v2** • Run command: cd /home/wufei/github.com/wufei-png/ClawRouter && pytest tests/unit/test_router.py -v</summary>
+<details><summary>Tool use: **run_terminal_command_v2** • Run command: cd /home/wufei/github.com/wufei-png/OrchAI && pytest tests/unit/test_router.py -v</summary>
 
 ```bash
-cd /home/wufei/github.com/wufei-png/ClawRouter && pytest tests/unit/test_router.py -v
+cd /home/wufei/github.com/wufei-png/OrchAI && pytest tests/unit/test_router.py -v
 ```
 
 ```
@@ -199,17 +199,17 @@ pytest is not in PATH - they're using uv and a venv. Let me try with the venv ac
 ---
 
 <tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2">
-<details><summary>Tool use: **run_terminal_command_v2** • Run command: cd /home/wufei/github.com/wufei-png/ClawRouter && uv run pytest tests/unit/test_router.py -v</summary>
+<details><summary>Tool use: **run_terminal_command_v2** • Run command: cd /home/wufei/github.com/wufei-png/OrchAI && uv run pytest tests/unit/test_router.py -v</summary>
 
 ```bash
-cd /home/wufei/github.com/wufei-png/ClawRouter && uv run pytest tests/unit/test_router.py -v
+cd /home/wufei/github.com/wufei-png/OrchAI && uv run pytest tests/unit/test_router.py -v
 ```
 
 ```
 ============================= test session starts ==============================
-platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- /home/wufei/github.com/wufei-png/ClawRouter/.venv/bin/python3
+platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- /home/wufei/github.com/wufei-png/OrchAI/.venv/bin/python3
 cachedir: .pytest_cache
-rootdir: /home/wufei/github.com/wufei-png/ClawRouter
+rootdir: /home/wufei/github.com/wufei-png/OrchAI
 configfile: pyproject.toml
 collecting ... collected 3 items
 
@@ -240,7 +240,7 @@ tests/unit/test_router.py::test_classify_task PASSED                     [100%]
 
 <tool-use data-tool-type="write" data-tool-name="edit_file_v2">
 
-<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/ClawRouter/tests/README.md</summary>
+<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/OrchAI/tests/README.md</summary>
 
 </details>
 
@@ -304,7 +304,7 @@ The user is showing a test failure - the test file `test_acp_adapter.py` is tryi
 ---
 
 <tool-use data-tool-type="read" data-tool-name="read_file_v2">
-<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/ClawRouter/tests/unit/test_acp_adapter.py</summary>
+<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/OrchAI/tests/unit/test_acp_adapter.py</summary>
 
 </details>
 </tool-use>
@@ -321,7 +321,7 @@ Parameters:
 ```json
 {
   "pattern": "ACPAdapter|AgentUnavailable|AllAgentsFailed",
-  "path": "/home/wufei/github.com/wufei-png/ClawRouter",
+  "path": "/home/wufei/github.com/wufei-png/OrchAI",
   "glob": "*.py",
   "caseInsensitive": false
 }
@@ -332,7 +332,7 @@ Additional data:
 {
   "isPruned": true,
   "pattern": "ACPAdapter|AgentUnavailable|AllAgentsFailed",
-  "path": "/home/wufei/github.com/wufei-png/ClawRouter",
+  "path": "/home/wufei/github.com/wufei-png/OrchAI",
   "outputMode": "content",
   "totalFiles": 2,
   "totalMatches": 4,
@@ -370,7 +370,7 @@ The project package is `orchai`, and the ACP adapter lives in `orchai/acp_adapte
 ---
 
 <tool-use data-tool-type="read" data-tool-name="read_file_v2">
-<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/ClawRouter/orchai/acp_adapter.py</summary>
+<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/OrchAI/orchai/acp_adapter.py</summary>
 
 </details>
 </tool-use>
@@ -397,7 +397,7 @@ Looking at the test file again - it only uses ACPAdapter. It doesn't actually us
 
 <tool-use data-tool-type="write" data-tool-name="edit_file_v2">
 
-<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/ClawRouter/tests/unit/test_acp_adapter.py</summary>
+<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/OrchAI/tests/unit/test_acp_adapter.py</summary>
 
 </details>
 
@@ -419,7 +419,7 @@ I need to check if ACPAdapter has CLI_COMMANDS - the test asserts adapter.CLI_CO
 ---
 
 <tool-use data-tool-type="read" data-tool-name="read_file_v2">
-<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/ClawRouter/orchai/acp_adapter.py</summary>
+<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/OrchAI/orchai/acp_adapter.py</summary>
 
 </details>
 </tool-use>
@@ -460,7 +460,7 @@ Parameters:
 ```json
 {
   "pattern": "CLI_COMMANDS",
-  "path": "/home/wufei/github.com/wufei-png/ClawRouter",
+  "path": "/home/wufei/github.com/wufei-png/OrchAI",
   "caseInsensitive": false
 }
 ```
@@ -470,7 +470,7 @@ Additional data:
 {
   "isPruned": true,
   "pattern": "CLI_COMMANDS",
-  "path": "/home/wufei/github.com/wufei-png/ClawRouter",
+  "path": "/home/wufei/github.com/wufei-png/OrchAI",
   "outputMode": "content",
   "totalFiles": 1,
   "totalMatches": 4,
@@ -513,7 +513,7 @@ or just the agent names as keys with some value. I'll add it to the adapter.
 
 <tool-use data-tool-type="write" data-tool-name="edit_file_v2">
 
-<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/ClawRouter/orchai/acp_adapter.py</summary>
+<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/OrchAI/orchai/acp_adapter.py</summary>
 
 </details>
 
@@ -535,17 +535,17 @@ Now run the tests to make sure they pass.
 ---
 
 <tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2">
-<details><summary>Tool use: **run_terminal_command_v2** • Run command: cd /home/wufei/github.com/wufei-png/ClawRouter && uv run pytest tests/unit/test_acp_adapter.py -v</summary>
+<details><summary>Tool use: **run_terminal_command_v2** • Run command: cd /home/wufei/github.com/wufei-png/OrchAI && uv run pytest tests/unit/test_acp_adapter.py -v</summary>
 
 ```bash
-cd /home/wufei/github.com/wufei-png/ClawRouter && uv run pytest tests/unit/test_acp_adapter.py -v
+cd /home/wufei/github.com/wufei-png/OrchAI && uv run pytest tests/unit/test_acp_adapter.py -v
 ```
 
 ```
 ============================= test session starts ==============================
-platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- /home/wufei/github.com/wufei-png/ClawRouter/.venv/bin/python3
+platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- /home/wufei/github.com/wufei-png/OrchAI/.venv/bin/python3
 cachedir: .pytest_cache
-rootdir: /home/wufei/github.com/wufei-png/ClawRouter
+rootdir: /home/wufei/github.com/wufei-png/OrchAI
 configfile: pyproject.toml
 collecting ... collected 2 items
 
@@ -563,7 +563,7 @@ You need to install a suitable plugin for your async framework, for example:
   - pytest-twisted
 =============================== warnings summary ===============================
 tests/unit/test_acp_adapter.py:5
-  /home/wufei/github.com/wufei-png/ClawRouter/tests/unit/test_acp_adapter.py:5: PytestUnknownMarkWarning: Unknown pytest.mark.asyncio - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+  /home/wufei/github.com/wufei-png/OrchAI/tests/unit/test_acp_adapter.py:5: PytestUnknownMarkWarning: Unknown pytest.mark.asyncio - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
     @pytest.mark.asyncio
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
@@ -592,7 +592,7 @@ Need to add pytest-asyncio so that @pytest.mark.asyncio works. Check pyproject.t
 
 <tool-use data-tool-type="write" data-tool-name="edit_file_v2">
 
-<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/ClawRouter/pyproject.toml</summary>
+<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/OrchAI/pyproject.toml</summary>
 
 </details>
 
@@ -601,7 +601,7 @@ Need to add pytest-asyncio so that @pytest.mark.asyncio works. Check pyproject.t
 ---
 
 <tool-use data-tool-type="read" data-tool-name="read_file_v2">
-<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/ClawRouter/pyproject.toml</summary>
+<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/OrchAI/pyproject.toml</summary>
 
 </details>
 </tool-use>
@@ -625,7 +625,7 @@ Actually the error said "You need to install a suitable plugin" - we added pytes
 
 <tool-use data-tool-type="write" data-tool-name="edit_file_v2">
 
-<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/ClawRouter/pyproject.toml</summary>
+<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/OrchAI/pyproject.toml</summary>
 
 </details>
 
@@ -647,17 +647,17 @@ Wait - I added pytest-asyncio in the first replace but the file read showed the 
 ---
 
 <tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2">
-<details><summary>Tool use: **run_terminal_command_v2** • Run command: cd /home/wufei/github.com/wufei-png/ClawRouter && uv sync && uv run pytest tests/unit/test_acp_adapter.py -v</summary>
+<details><summary>Tool use: **run_terminal_command_v2** • Run command: cd /home/wufei/github.com/wufei-png/OrchAI && uv sync && uv run pytest tests/unit/test_acp_adapter.py -v</summary>
 
 ```bash
-cd /home/wufei/github.com/wufei-png/ClawRouter && uv sync && uv run pytest tests/unit/test_acp_adapter.py -v
+cd /home/wufei/github.com/wufei-png/OrchAI && uv sync && uv run pytest tests/unit/test_acp_adapter.py -v
 ```
 
 ```
 ============================= test session starts ==============================
-platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- /home/wufei/github.com/wufei-png/ClawRouter/.venv/bin/python3
+platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- /home/wufei/github.com/wufei-png/OrchAI/.venv/bin/python3
 cachedir: .pytest_cache
-rootdir: /home/wufei/github.com/wufei-png/ClawRouter
+rootdir: /home/wufei/github.com/wufei-png/OrchAI
 configfile: pyproject.toml
 plugins: asyncio-1.3.0
 asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
@@ -668,12 +668,12 @@ tests/unit/test_acp_adapter.py::test_cli_commands_defined PASSED         [100%]
 
 ============================== 2 passed in 0.01s ===============================
 Resolved 10 packages in 415ms
-   Building orchai @ file:///home/wufei/github.com/wufei-png/ClawRouter
-      Built orchai @ file:///home/wufei/github.com/wufei-png/ClawRouter
+   Building orchai @ file:///home/wufei/github.com/wufei-png/OrchAI
+      Built orchai @ file:///home/wufei/github.com/wufei-png/OrchAI
 Prepared 3 packages in 231ms
 Uninstalled 1 package in 0.49ms
 Installed 3 packages in 1ms
- ~ orchai==0.1.0 (from file:///home/wufei/github.com/wufei-png/ClawRouter)
+ ~ orchai==0.1.0 (from file:///home/wufei/github.com/wufei-png/OrchAI)
  + pytest-asyncio==1.3.0
  + typing-extensions==4.15.0
 
@@ -745,7 +745,7 @@ Let me start by exploring the codebase structure and reading the key files, then
 <details>
 <summary>Tool use: **glob_file_search** • Searched codebase "undefined" • **15** results in **1** directory</summary>
 
-Directory: **/home/wufei/github.com/wufei-png/ClawRouter** (15 files)
+Directory: **/home/wufei/github.com/wufei-png/OrchAI** (15 files)
 
 | File |
 |------|
@@ -771,7 +771,7 @@ Directory: **/home/wufei/github.com/wufei-png/ClawRouter** (15 files)
 ---
 
 <tool-use data-tool-type="read" data-tool-name="read_file_v2">
-<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/ClawRouter/pyproject.toml</summary>
+<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/OrchAI/pyproject.toml</summary>
 
 </details>
 </tool-use>
@@ -804,7 +804,7 @@ Let me read all the main orchai and test Python files (excluding demo.py and tes
 ---
 
 <tool-use data-tool-type="read" data-tool-name="read_file_v2">
-<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/ClawRouter/orchai/__init__.py</summary>
+<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/OrchAI/orchai/__init__.py</summary>
 
 </details>
 </tool-use>
@@ -812,7 +812,7 @@ Let me read all the main orchai and test Python files (excluding demo.py and tes
 ---
 
 <tool-use data-tool-type="read" data-tool-name="read_file_v2">
-<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/ClawRouter/orchai/cli.py</summary>
+<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/OrchAI/orchai/cli.py</summary>
 
 </details>
 </tool-use>
@@ -820,7 +820,7 @@ Let me read all the main orchai and test Python files (excluding demo.py and tes
 ---
 
 <tool-use data-tool-type="read" data-tool-name="read_file_v2">
-<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/ClawRouter/orchai/router.py</summary>
+<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/OrchAI/orchai/router.py</summary>
 
 </details>
 </tool-use>
@@ -828,7 +828,7 @@ Let me read all the main orchai and test Python files (excluding demo.py and tes
 ---
 
 <tool-use data-tool-type="read" data-tool-name="read_file_v2">
-<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/ClawRouter/orchai/acp_adapter.py</summary>
+<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/OrchAI/orchai/acp_adapter.py</summary>
 
 </details>
 </tool-use>
@@ -836,7 +836,7 @@ Let me read all the main orchai and test Python files (excluding demo.py and tes
 ---
 
 <tool-use data-tool-type="read" data-tool-name="read_file_v2">
-<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/ClawRouter/orchai/init.py</summary>
+<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/OrchAI/orchai/init.py</summary>
 
 </details>
 </tool-use>
@@ -857,7 +857,7 @@ Now let me read the test files and run the full test suite and any available lin
 ---
 
 <tool-use data-tool-type="read" data-tool-name="read_file_v2">
-<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/ClawRouter/tests/unit/test_router.py</summary>
+<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/OrchAI/tests/unit/test_router.py</summary>
 
 </details>
 </tool-use>
@@ -865,7 +865,7 @@ Now let me read the test files and run the full test suite and any available lin
 ---
 
 <tool-use data-tool-type="read" data-tool-name="read_file_v2">
-<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/ClawRouter/tests/unit/test_acp_adapter.py</summary>
+<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/OrchAI/tests/unit/test_acp_adapter.py</summary>
 
 </details>
 </tool-use>
@@ -873,7 +873,7 @@ Now let me read the test files and run the full test suite and any available lin
 ---
 
 <tool-use data-tool-type="read" data-tool-name="read_file_v2">
-<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/ClawRouter/tests/integration/test_routing.py</summary>
+<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/OrchAI/tests/integration/test_routing.py</summary>
 
 </details>
 </tool-use>
@@ -881,7 +881,7 @@ Now let me read the test files and run the full test suite and any available lin
 ---
 
 <tool-use data-tool-type="read" data-tool-name="read_file_v2">
-<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/ClawRouter/tests/e2e/test_full_flow.py</summary>
+<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/OrchAI/tests/e2e/test_full_flow.py</summary>
 
 </details>
 </tool-use>
