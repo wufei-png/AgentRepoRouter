@@ -63,7 +63,61 @@ if (!Array.isArray(data.repos)) {
   fail("repos must be an array");
 }
 
-const supportedSkillKeys = new Set(["claude-code", "opencode", "cursor", "codex"]);
+const supportedCliKeys = new Set(["claude-code", "opencode", "cursor", "codex"]);
+
+function validateNamedAssetMap(kind, assetMap, repoIndex) {
+  if (!assetMap || typeof assetMap !== "object" || Array.isArray(assetMap)) {
+    fail(`repos[${repoIndex}].${kind} must be an object`);
+  }
+
+  for (const [cliName, assetEntries] of Object.entries(assetMap)) {
+    if (!supportedCliKeys.has(cliName)) {
+      fail(`repos[${repoIndex}].${kind} has an unsupported CLI key: ${cliName}`);
+    }
+    if (!Array.isArray(assetEntries)) {
+      fail(`repos[${repoIndex}].${kind}.${cliName} must be an array`);
+    }
+
+    const seenAssetNames = new Set();
+    for (const [assetIndex, assetEntry] of assetEntries.entries()) {
+      if (!assetEntry || typeof assetEntry !== "object" || Array.isArray(assetEntry)) {
+        fail(
+          `repos[${repoIndex}].${kind}.${cliName}[${assetIndex}] must be an object`
+        );
+      }
+
+      const assetKeys = Object.keys(assetEntry).sort();
+      const expectedAssetKeys = ["description", "name"];
+      if (
+        assetKeys.length !== expectedAssetKeys.length ||
+        assetKeys.some((key, keyIndex) => key !== expectedAssetKeys[keyIndex])
+      ) {
+        fail(
+          `repos[${repoIndex}].${kind}.${cliName}[${assetIndex}] must contain exactly these keys: ${expectedAssetKeys.join(", ")}`
+        );
+      }
+
+      for (const key of ["name", "description"]) {
+        if (
+          typeof assetEntry[key] !== "string" ||
+          assetEntry[key].trim() === ""
+        ) {
+          fail(
+            `repos[${repoIndex}].${kind}.${cliName}[${assetIndex}].${key} must be a non-empty string`
+          );
+        }
+      }
+
+      if (seenAssetNames.has(assetEntry.name)) {
+        fail(
+          `repos[${repoIndex}].${kind}.${cliName} contains a duplicate entry: ${assetEntry.name}`
+        );
+      }
+      seenAssetNames.add(assetEntry.name);
+    }
+  }
+}
+
 const seenRepoPaths = new Set();
 for (const [index, repo] of data.repos.entries()) {
   if (!repo || typeof repo !== "object" || Array.isArray(repo)) {
@@ -71,7 +125,7 @@ for (const [index, repo] of data.repos.entries()) {
   }
 
   const repoKeys = Object.keys(repo).sort();
-  const expectedRepoKeys = ["aliases", "name", "path", "skills"];
+  const expectedRepoKeys = ["agents", "aliases", "name", "path", "skills"];
   if (
     repoKeys.length !== expectedRepoKeys.length ||
     repoKeys.some((key, keyIndex) => key !== expectedRepoKeys[keyIndex])
@@ -105,56 +159,8 @@ for (const [index, repo] of data.repos.entries()) {
     seenAliases.add(alias);
   }
 
-  if (!repo.skills || typeof repo.skills !== "object" || Array.isArray(repo.skills)) {
-    fail(`repos[${index}].skills must be an object`);
-  }
-
-  for (const [cliName, skillEntries] of Object.entries(repo.skills)) {
-    if (!supportedSkillKeys.has(cliName)) {
-      fail(`repos[${index}].skills has an unsupported CLI key: ${cliName}`);
-    }
-    if (!Array.isArray(skillEntries)) {
-      fail(`repos[${index}].skills.${cliName} must be an array`);
-    }
-
-    const seenSkillNames = new Set();
-    for (const [skillIndex, skillEntry] of skillEntries.entries()) {
-      if (!skillEntry || typeof skillEntry !== "object" || Array.isArray(skillEntry)) {
-        fail(
-          `repos[${index}].skills.${cliName}[${skillIndex}] must be an object`
-        );
-      }
-
-      const skillKeys = Object.keys(skillEntry).sort();
-      const expectedSkillKeys = ["description", "name"];
-      if (
-        skillKeys.length !== expectedSkillKeys.length ||
-        skillKeys.some((key, keyIndex) => key !== expectedSkillKeys[keyIndex])
-      ) {
-        fail(
-          `repos[${index}].skills.${cliName}[${skillIndex}] must contain exactly these keys: ${expectedSkillKeys.join(", ")}`
-        );
-      }
-
-      for (const key of ["name", "description"]) {
-        if (
-          typeof skillEntry[key] !== "string" ||
-          skillEntry[key].trim() === ""
-        ) {
-          fail(
-            `repos[${index}].skills.${cliName}[${skillIndex}].${key} must be a non-empty string`
-          );
-        }
-      }
-
-      if (seenSkillNames.has(skillEntry.name)) {
-        fail(
-          `repos[${index}].skills.${cliName} contains a duplicate skill: ${skillEntry.name}`
-        );
-      }
-      seenSkillNames.add(skillEntry.name);
-    }
-  }
+  validateNamedAssetMap("skills", repo.skills, index);
+  validateNamedAssetMap("agents", repo.agents, index);
 
   if (seenRepoPaths.has(repo.path)) {
     fail(`repos contains a duplicate path: ${repo.path}`);

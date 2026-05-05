@@ -42,6 +42,7 @@ def test_manual_install_deploys_skill_and_config_into_router_directory(tmp_path)
                 "path": str(PROJECT_ROOT),
                 "aliases": [],
                 "skills": {},
+                "agents": {},
             }
         ],
     }
@@ -49,7 +50,7 @@ def test_manual_install_deploys_skill_and_config_into_router_directory(tmp_path)
     assert "读取 `references/repo_mappings.json`" in deployed_skill_path(home_dir).read_text()
 
 
-def test_manual_install_extracts_detected_project_skills(tmp_path):
+def test_manual_install_extracts_detected_project_assets(tmp_path):
     home_dir = tmp_path / "home"
     fake_bin = make_fake_bin(
         tmp_path,
@@ -81,6 +82,17 @@ def test_manual_install_extracts_detected_project_skills(tmp_path):
                     }
                 ]
             },
+            "agents": {
+                "claude-code": [
+                    {
+                        "name": "bugfix",
+                        "description": (
+                            "Bug fixing agent. Use when task contains: fix, bug, "
+                            "error, issue."
+                        ),
+                    }
+                ]
+            },
         },
         {
             "name": "test-docs",
@@ -94,6 +106,14 @@ def test_manual_install_extracts_detected_project_skills(tmp_path):
                             "Documentation writing skill. Use when task involves "
                             "writing or updating documentation."
                         ),
+                    }
+                ]
+            },
+            "agents": {
+                "opencode": [
+                    {
+                        "name": "docs_writer",
+                        "description": "Documentation specialist for OpenCode",
                     }
                 ]
             },

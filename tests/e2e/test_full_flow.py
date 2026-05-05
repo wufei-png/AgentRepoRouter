@@ -43,6 +43,7 @@ def test_auto_scan_preserves_repos_with_duplicate_names(tmp_path):
     assert actual_shared_paths == expected_shared_paths
     assert all(repo["aliases"] == [] for repo in deployed_config["repos"])
     assert all(repo["skills"] == {} for repo in deployed_config["repos"])
+    assert all(repo["agents"] == {} for repo in deployed_config["repos"])
 
 
 def test_manual_input_rejects_relative_paths_and_keeps_absolute_paths(tmp_path):
@@ -60,5 +61,6 @@ def test_manual_input_rejects_relative_paths_and_keeps_absolute_paths(tmp_path):
             "path": str(PROJECT_ROOT),
             "aliases": [],
             "skills": {},
+            "agents": {},
         }
     ]

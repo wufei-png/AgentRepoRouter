@@ -41,7 +41,7 @@
 
 ### Router Skill
 - 读取 `references/repo_mappings.json` 获取配置
-- 利用 repo 的 `aliases` 和已检测的 `skills` 摘要辅助判断
+- 利用 repo 的 `aliases`、已检测的 `skills` 摘要、已检测的 `agents` 摘要辅助判断
 - LLM 判断任务类型
 - 选择合适的 Agent
 - 执行 CLI 命令
@@ -63,6 +63,14 @@
           {
             "name": "build_and_test",
             "description": "Run build and tests before finishing changes."
+          }
+        ]
+      },
+      "agents": {
+        "claude-code": [
+          {
+            "name": "bugfix",
+            "description": "Fix bugs and regressions with targeted changes."
           }
         ]
       }

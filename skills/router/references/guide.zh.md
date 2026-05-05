@@ -56,6 +56,7 @@
 
 - 先看目标 repo 内的自定义 skill / agent。
 - 如果 `repo_mappings.json` 的 `skills` 字段已经列出了该 repo 的 project-level skill 摘要，先把这些摘要当作路由强提示。
+- 如果 `repo_mappings.json` 的 `agents` 字段已经列出了该 repo 的 project-level agent 摘要，也把这些摘要当作路由强提示。
 - 如果项目级同时命中 skill 和 agent，优先保留 skill，再决定是否把 agent 一并带上。
 
 ### 全局级保守

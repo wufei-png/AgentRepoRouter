@@ -16,13 +16,22 @@
             "description": "Run build and tests before finishing changes."
           }
         ]
+      },
+      "agents": {
+        "claude-code": [
+          {
+            "name": "bugfix",
+            "description": "Fix bugs and regressions with targeted changes."
+          }
+        ]
       }
     },
     {
       "name": "example-frontend",
       "path": "/path/to/frontend",
       "aliases": [],
-      "skills": {}
+      "skills": {},
+      "agents": {}
     }
   ]
 }

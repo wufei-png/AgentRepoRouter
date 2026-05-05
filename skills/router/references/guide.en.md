@@ -56,6 +56,7 @@ This reference document holds the longer Router conventions. The runtime-facing 
 
 - Check custom project skills and agents inside the target repo before looking anywhere global.
 - If `repo_mappings.json` already lists project-level skill summaries in `skills`, treat those summaries as strong routing hints first.
+- If `repo_mappings.json` already lists project-level agent summaries in `agents`, treat those summaries as strong routing hints too.
 - If a project-level skill and agent both match, keep the skill first, then decide whether the agent should also be attached.
 
 ### Conservative global matching

@@ -698,10 +698,18 @@ const path = require("node:path");
 
 const [, , configPath, schemaVersionRaw, repoListPath, ...selectedClis] = process.argv;
 
-const SKILL_LOCATIONS = {
-  "claude-code": path.join(".claude", "skills"),
-  "opencode": path.join(".opencode", "skills"),
-  codex: path.join(".agents", "skills"),
+const PROJECT_ASSET_LOCATIONS = {
+  skills: {
+    "claude-code": { root: path.join(".claude", "skills"), kind: "directory-skill" },
+    "opencode": { root: path.join(".opencode", "skills"), kind: "directory-skill" },
+    codex: { root: path.join(".agents", "skills"), kind: "directory-skill" },
+  },
+  agents: {
+    "claude-code": { root: path.join(".claude", "agents"), kind: "markdown-file" },
+    "opencode": { root: path.join(".opencode", "agents"), kind: "markdown-file" },
+    cursor: { root: path.join(".cursor", "agents"), kind: "markdown-file" },
+    codex: { root: path.join(".codex", "agents"), kind: "toml-file" },
+  },
 };
 
 function splitFrontmatter(content) {
@@ -733,7 +741,7 @@ function parseFrontmatterValue(frontmatter, key) {
   return value.trim();
 }
 
-function inferDescription(body, fallbackName) {
+function inferDescription(body, fallbackName, assetLabel) {
   const lines = body.split(/\r?\n/);
   let inCodeBlock = false;
 
@@ -756,48 +764,91 @@ function inferDescription(body, fallbackName) {
     return line;
   }
 
-  return `Project skill ${fallbackName}.`;
+  return `Project ${assetLabel} ${fallbackName}.`;
 }
 
-function extractSkillMetadata(skillFilePath, fallbackName) {
-  const content = fs.readFileSync(skillFilePath, "utf8");
+function extractMarkdownMetadata(filePath, fallbackName, assetLabel) {
+  const content = fs.readFileSync(filePath, "utf8");
   const { frontmatter, body } = splitFrontmatter(content);
   const name = parseFrontmatterValue(frontmatter, "name") || fallbackName;
   const description =
     parseFrontmatterValue(frontmatter, "description") ||
-    inferDescription(body, name);
+    inferDescription(body, name, assetLabel);
 
   return { name, description };
 }
 
-function detectRepoSkills(repoPath) {
-  const detectedSkills = {};
+function parseTomlValue(content, key) {
+  const match = content.match(new RegExp(`^${key}\\s*=\\s*["']([^"']+)["']$`, "m"));
+  if (!match) {
+    return "";
+  }
 
-  for (const [cliName, relativeDir] of Object.entries(SKILL_LOCATIONS)) {
-    const skillRoot = path.join(repoPath, relativeDir);
-    if (!fs.existsSync(skillRoot) || !fs.statSync(skillRoot).isDirectory()) {
+  return match[1].trim();
+}
+
+function extractTomlMetadata(filePath, fallbackName, assetLabel) {
+  const content = fs.readFileSync(filePath, "utf8");
+  const name = parseTomlValue(content, "name") || fallbackName;
+  const description =
+    parseTomlValue(content, "description") || `Project ${assetLabel} ${name}.`;
+
+  return { name, description };
+}
+
+function detectProjectAssets(repoPath, assetType) {
+  const detectedAssets = {};
+  const assetLocations = PROJECT_ASSET_LOCATIONS[assetType];
+  const assetLabel = assetType === "skills" ? "skill" : "agent";
+
+  for (const [cliName, config] of Object.entries(assetLocations)) {
+    const assetRoot = path.join(repoPath, config.root);
+    if (!fs.existsSync(assetRoot) || !fs.statSync(assetRoot).isDirectory()) {
       continue;
     }
 
-    const skills = fs
-      .readdirSync(skillRoot, { withFileTypes: true })
-      .filter((entry) => entry.isDirectory())
-      .map((entry) => entry.name)
-      .sort((left, right) => left.localeCompare(right))
-      .flatMap((entryName) => {
-        const skillFilePath = path.join(skillRoot, entryName, "SKILL.md");
-        if (!fs.existsSync(skillFilePath) || !fs.statSync(skillFilePath).isFile()) {
-          return [];
-        }
-        return [extractSkillMetadata(skillFilePath, entryName)];
-      });
+    let assets = [];
+    if (config.kind === "directory-skill") {
+      assets = fs
+        .readdirSync(assetRoot, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => entry.name)
+        .sort((left, right) => left.localeCompare(right))
+        .flatMap((entryName) => {
+          const assetFilePath = path.join(assetRoot, entryName, "SKILL.md");
+          if (!fs.existsSync(assetFilePath) || !fs.statSync(assetFilePath).isFile()) {
+            return [];
+          }
+          return [extractMarkdownMetadata(assetFilePath, entryName, assetLabel)];
+        });
+    } else if (config.kind === "markdown-file") {
+      assets = fs
+        .readdirSync(assetRoot, { withFileTypes: true })
+        .filter((entry) => entry.isFile() && entry.name.endsWith(".md"))
+        .map((entry) => entry.name)
+        .sort((left, right) => left.localeCompare(right))
+        .map((entryName) => {
+          const baseName = path.basename(entryName, ".md");
+          return extractMarkdownMetadata(path.join(assetRoot, entryName), baseName, assetLabel);
+        });
+    } else if (config.kind === "toml-file") {
+      assets = fs
+        .readdirSync(assetRoot, { withFileTypes: true })
+        .filter((entry) => entry.isFile() && entry.name.endsWith(".toml"))
+        .map((entry) => entry.name)
+        .sort((left, right) => left.localeCompare(right))
+        .map((entryName) => {
+          const baseName = path.basename(entryName, ".toml");
+          return extractTomlMetadata(path.join(assetRoot, entryName), baseName, assetLabel);
+        });
+    }
 
-    if (skills.length > 0) {
-      detectedSkills[cliName] = skills;
+    if (assets.length > 0) {
+      detectedAssets[cliName] = assets;
     }
   }
 
-  return detectedSkills;
+  return detectedAssets;
 }
 
 const repoPaths = fs
@@ -813,7 +864,8 @@ const payload = {
     name: path.basename(repoPath),
     path: repoPath,
     aliases: [],
-    skills: detectRepoSkills(repoPath),
+    skills: detectProjectAssets(repoPath, "skills"),
+    agents: detectProjectAssets(repoPath, "agents"),
   })),
 };
 
@@ -916,7 +968,7 @@ main() {
     echo "Next steps:"
     echo "  1. Run 'openclaw' to start"
     echo "  2. The router skill will help route tasks"
-    echo "  3. Edit $ROUTER_CONFIG_PATH to add repo aliases or review detected skills"
+    echo "  3. Edit $ROUTER_CONFIG_PATH to add repo aliases or review detected skills and agents"
     echo ""
 }
 

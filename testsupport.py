@@ -52,6 +52,7 @@ def write_repo_mappings(config_path: Path, agents: list[str], repos: list[dict])
                 "path": repo["path"],
                 "aliases": repo.get("aliases", []),
                 "skills": repo.get("skills", {}),
+                "agents": repo.get("agents", {}),
             }
         )
 

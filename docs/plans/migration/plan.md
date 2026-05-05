@@ -111,6 +111,14 @@ use skill <skill-name> to solve the following task: <task description>
             "description": "Run build and tests before finishing changes."
           }
         ]
+      },
+      "agents": {
+        "claude-code": [
+          {
+            "name": "bugfix",
+            "description": "Fix bugs and regressions with targeted changes."
+          }
+        ]
       }
     }
   ]
@@ -175,6 +183,14 @@ install.sh
           {
             "name": "build_and_test",
             "description": "Run build and tests before finishing changes."
+          }
+        ]
+      },
+      "agents": {
+        "claude-code": [
+          {
+            "name": "bugfix",
+            "description": "Fix bugs and regressions with targeted changes."
           }
         ]
       }
