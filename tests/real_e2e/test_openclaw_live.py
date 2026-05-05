@@ -58,7 +58,7 @@ def _run_judge(real_e2e_config: dict, prompt: str) -> dict:
     return extract_tagged_json(collect_agent_output_text(payload), "ORCHAI_JUDGE")
 
 
-def test_docs_question_routes_to_project_skill_and_agent(tmp_path, real_e2e_config):
+def test_docs_question_is_answered_correctly_live(tmp_path, real_e2e_config):
     backend_repo = copy_fixture_repo(
         PROJECT_ROOT / "tests" / "repos" / "test-backend",
         tmp_path / "test-backend",
@@ -75,11 +75,7 @@ def test_docs_question_routes_to_project_skill_and_agent(tmp_path, real_e2e_conf
         {"name": "test-docs", "path": str(docs_repo), "type": "docs"},
     ]
     task = "what is the deployment process in test-docs?"
-    message = (
-        "ORCHAI_REAL_E2E_TRACE\n"
-        "use skill router to solve the following task: "
-        f"{task}"
-    )
+    message = f"use skill router to solve the following task: {task}"
 
     with temporary_router_skill_override(
         real_e2e_config["agent_workspace"],
@@ -94,15 +90,15 @@ def test_docs_question_routes_to_project_skill_and_agent(tmp_path, real_e2e_conf
         )
 
     output_text = collect_agent_output_text(payload)
-    decision = extract_tagged_json(output_text, "ORCHAI_DECISION")
+    reference_material = (docs_repo / "docs" / "deployment.md").read_text()
 
     judge_prompt = build_judge_prompt(
         task=task,
-        expected_repo="test-docs",
-        expected_cli="opencode",
-        expected_agent="docs_writer",
-        expected_skill="doc_writer",
-        decision=decision,
+        success_criteria=(
+            "The answer should accurately describe the deployment process from the test-docs "
+            "repository, including the major rollout steps and the health-check command."
+        ),
+        reference_material=reference_material,
         agent_output_text=output_text,
         repo_diff=run_command(["git", "diff", "--stat"], cwd=docs_repo).stdout,
         repo_test_output="docs repo does not define automated tests",
@@ -112,7 +108,7 @@ def test_docs_question_routes_to_project_skill_and_agent(tmp_path, real_e2e_conf
     assert verdict["pass"], verdict["reasons"]
 
 
-def test_backend_bugfix_routes_to_project_skill_and_agent(tmp_path, real_e2e_config):
+def test_backend_bugfix_completes_successfully_live(tmp_path, real_e2e_config):
     backend_repo = copy_fixture_repo(
         PROJECT_ROOT / "tests" / "repos" / "test-backend",
         tmp_path / "test-backend",
@@ -132,11 +128,7 @@ def test_backend_bugfix_routes_to_project_skill_and_agent(tmp_path, real_e2e_con
         "fix the login bug in test-backend so invalid passwords are rejected, "
         "use the project's build_and_test skill, and make sure npm test passes"
     )
-    message = (
-        "ORCHAI_REAL_E2E_TRACE\n"
-        "use skill router to solve the following task: "
-        f"{task}"
-    )
+    message = f"use skill router to solve the following task: {task}"
 
     with temporary_router_skill_override(
         real_e2e_config["agent_workspace"],
@@ -152,16 +144,16 @@ def test_backend_bugfix_routes_to_project_skill_and_agent(tmp_path, real_e2e_con
         )
 
     output_text = collect_agent_output_text(payload)
-    decision = extract_tagged_json(output_text, "ORCHAI_DECISION")
     repo_test_result = run_repo_tests(backend_repo)
+    reference_material = (backend_repo / "test" / "auth.test.js").read_text()
 
     judge_prompt = build_judge_prompt(
         task=task,
-        expected_repo="test-backend",
-        expected_cli="claude-code",
-        expected_agent="bugfix",
-        expected_skill="build_and_test",
-        decision=decision,
+        success_criteria=(
+            "The implementation should reject invalid login credentials in test-backend, "
+            "and the repository tests should pass after the change."
+        ),
+        reference_material=reference_material,
         agent_output_text=output_text,
         repo_diff=run_command(["git", "diff", "--stat"], cwd=backend_repo).stdout,
         repo_test_output=(repo_test_result.stdout + repo_test_result.stderr),

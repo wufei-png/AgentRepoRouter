@@ -11,6 +11,8 @@ Archived here:
 - `legacy/docs/plans/active/mvp-acp-era.md` - archived ACP-era MVP plan
 - `legacy/prompts/router-skill.acpx.md` - archived ACP-era router skill prompt
 - `legacy/prompts/orchai-router.acpx.md` - archived ACP-era router agent prompt
+- `legacy/tests/fixtures/router_trace.zh.md` - archived Chinese real-e2e trace protocol
+- `legacy/tests/fixtures/router_trace.en.md` - archived English real-e2e trace protocol
 
 The active runtime is now defined by:
 

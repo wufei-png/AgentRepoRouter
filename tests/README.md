@@ -58,7 +58,8 @@ bash scripts/run_real_e2e.sh
 
 - 测试不会启动 OpenClaw 服务，只会先检查 `openclaw health --json`
 - 测试通过 `openclaw agent --agent <id> --message ... --json` 调用真实 Gateway
-- 测试会把 router skill 的 trace 规则注入到 test agent workspace 的临时副本中，测试后自动恢复
+- 测试会把当前 router skill 和 references 临时复制到 test agent workspace，并写入测试专用 `repo_mappings.json`，测试后自动恢复
+- live e2e 继续使用 AI judge 判断结果是否正确，但不再依赖测试专用 routing trace 协议
 - 测试 repo 会复制到临时目录，并重新初始化 git，因此不会污染 `tests/repos/`
 
 ## Notes

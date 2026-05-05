@@ -16,9 +16,6 @@ INSTALL_SCRIPT = PROJECT_ROOT / "scripts" / "install.sh"
 VALIDATE_REPO_MAPPINGS_SCRIPT = PROJECT_ROOT / "scripts" / "validate_repo_mappings.sh"
 DEPLOYED_SKILL_REL = Path(".openclaw/skills/router/SKILL.md")
 DEPLOYED_CONFIG_REL = Path(".openclaw/skills/router/references/repo_mappings.json")
-REAL_E2E_FIXTURES_DIR = PROJECT_ROOT / "tests" / "fixtures"
-ROUTER_TRACE_SNIPPET_EN = REAL_E2E_FIXTURES_DIR / "router_trace.en.md"
-ROUTER_TRACE_SNIPPET_ZH = REAL_E2E_FIXTURES_DIR / "router_trace.zh.md"
 REPO_MAPPINGS_SCHEMA_VERSION = 1
 
 
@@ -286,15 +283,16 @@ def temporary_router_skill_override(
 
     try:
         template_name = "SKILL.zh.md" if language == "zh" else "SKILL.en.md"
-        trace_snippet = ROUTER_TRACE_SNIPPET_ZH if language == "zh" else ROUTER_TRACE_SNIPPET_EN
         template_path = PROJECT_ROOT / "skills" / "router" / template_name
+        references_dir = PROJECT_ROOT / "skills" / "router" / "references"
 
         workspace_skill_dir.mkdir(parents=True, exist_ok=True)
-        (workspace_skill_dir / "references").mkdir(parents=True, exist_ok=True)
-        (workspace_skill_dir / "SKILL.md").write_text(
-            template_path.read_text() + "\n\n" + trace_snippet.read_text()
-        )
-        write_repo_mappings(workspace_skill_dir / "references" / "repo_mappings.json", agents, repos)
+        workspace_references_dir = workspace_skill_dir / "references"
+        workspace_references_dir.mkdir(parents=True, exist_ok=True)
+        (workspace_skill_dir / "SKILL.md").write_text(template_path.read_text())
+        for reference_path in references_dir.glob("*.md"):
+            shutil.copy2(reference_path, workspace_references_dir / reference_path.name)
+        write_repo_mappings(workspace_references_dir / "repo_mappings.json", agents, repos)
         yield workspace_skill_dir
     finally:
         if workspace_skill_dir.exists():
@@ -306,11 +304,8 @@ def temporary_router_skill_override(
 def build_judge_prompt(
     *,
     task: str,
-    expected_repo: str,
-    expected_cli: str,
-    expected_agent: str,
-    expected_skill: str,
-    decision: dict,
+    success_criteria: str,
+    reference_material: str,
     agent_output_text: str,
     repo_diff: str,
     repo_test_output: str,
@@ -322,14 +317,11 @@ ORCHAI_JUDGE {{"pass":true|false,"reasons":["..."]}}
 Task:
 {task}
 
-Expected routing:
-- repo: {expected_repo}
-- cli: {expected_cli}
-- custom agent: {expected_agent}
-- custom skill: {expected_skill}
+Success criteria:
+{success_criteria}
 
-Observed decision:
-{json.dumps(decision, ensure_ascii=False)}
+Reference material:
+{reference_material}
 
 Observed agent output:
 {agent_output_text}
@@ -340,6 +332,7 @@ Observed git diff:
 Observed repo test output:
 {repo_test_output}
 
-Pass only if the task result is correct and the routing used the expected repo/cli/agent/skill.
-If any expected routing element is missing or the task result is wrong, return pass=false.
+Pass only if the observable task result satisfies the success criteria using the reference material.
+Ignore internal routing details.
+For code tasks, if the repo tests fail, return pass=false.
 """
