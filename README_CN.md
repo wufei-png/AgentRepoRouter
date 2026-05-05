@@ -6,6 +6,8 @@
 
 ClawRouter 将 OpenClaw 变成 Claude Code、OpenCode、Cursor 与 Codex 的统一入口。它不会替代这些 CLI，而是将任务路由到合适的仓库，保留各 CLI 原生的 agent/skill 约定，并利用结构化仓库元数据提升导航与匹配质量。
 
+![ClawRouter 宣传图](docs/advertisement/ads.png)
+
 ## 为什么需要 ClawRouter
 
 很多开发者现在同时拥有多个 coding CLI、多个仓库，以及多个自定义 agent/skill 的存放位置。

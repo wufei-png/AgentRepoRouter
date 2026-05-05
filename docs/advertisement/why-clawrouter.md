@@ -9,6 +9,8 @@
 
 这正是 ClawRouter 的切入点。
 
+![ClawRouter 宣传图](ads.png)
+
 ## ClawRouter 不是另一个大而全平台
 
 ClawRouter 不是要替代 OpenClaw，也不是要重造 Claude Code、Codex、Cursor、OpenCode。
