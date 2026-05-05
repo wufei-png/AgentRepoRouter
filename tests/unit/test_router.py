@@ -10,13 +10,25 @@ ROUTER_DIR = PROJECT_ROOT / "skills" / "router"
 
 
 def test_skill_variants_use_references_repo_mappings():
-    for skill_path in [ROUTER_DIR / "SKILL.zh.md", ROUTER_DIR / "SKILL.en.md"]:
+    expected_guides = {
+        ROUTER_DIR / "SKILL.zh.md": "references/guide.zh.md",
+        ROUTER_DIR / "SKILL.en.md": "references/guide.en.md",
+    }
+
+    for skill_path, guide_ref in expected_guides.items():
         content = skill_path.read_text()
 
         assert "references/repo_mappings.json" in content
+        assert guide_ref in content
         assert "--cwd" not in content
         assert "use skill <skill-name> to solve the following task" in content
         assert "use agent" in content
+        assert "ORCHAI_REAL_E2E_TRACE" not in content
+
+
+def test_router_reference_guides_exist():
+    assert (ROUTER_DIR / "references" / "guide.zh.md").exists()
+    assert (ROUTER_DIR / "references" / "guide.en.md").exists()
 
 
 def test_reference_repo_mappings_matches_current_schema():
