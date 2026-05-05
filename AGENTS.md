@@ -84,14 +84,6 @@ skills/router/
             "description": "Run build and tests before finishing changes."
           }
         ]
-      },
-      "agents": {
-        "claude-code": [
-          {
-            "name": "bugfix",
-            "description": "Fix bugs and regressions with targeted changes."
-          }
-        ]
       }
     }
   ]

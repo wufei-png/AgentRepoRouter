@@ -23,7 +23,7 @@ def test_skill_variants_use_references_repo_mappings():
         assert "--cwd" not in content
         assert "use skill <skill-name> to solve the following task" in content
         assert "use agent" in content
-        assert "ORCHAI_REAL_E2E_TRACE" not in content
+        assert "CLAWROUTER_REAL_E2E_TRACE" not in content
 
 
 def test_router_reference_guides_exist():

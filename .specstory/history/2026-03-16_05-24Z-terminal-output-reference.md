@@ -56,10 +56,10 @@ Pre-commit stashed your unstaged files, ruff auto-fixed one error in the staged 
 ---
 
 <tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2">
-<details><summary>Tool use: **run_terminal_command_v2** • Run command: cd /home/wufei/github.com/wufei-png/OrchAI && ruff check . 2>&1</summary>
+<details><summary>Tool use: **run_terminal_command_v2** • Run command: cd /home/wufei/github.com/wufei-png/ClawRouter && ruff check . 2>&1</summary>
 
 ```bash
-cd /home/wufei/github.com/wufei-png/OrchAI && ruff check . 2>&1
+cd /home/wufei/github.com/wufei-png/ClawRouter && ruff check . 2>&1
 ```
 </details>
 </tool-use>

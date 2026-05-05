@@ -57,7 +57,7 @@ def test_manual_input_rejects_relative_paths_and_keeps_absolute_paths(tmp_path):
     assert "Please enter an absolute path: relative/path" in result.stdout
     assert load_deployed_config(home_dir)["repos"] == [
         {
-            "name": "OrchAI",
+            "name": PROJECT_ROOT.name,
             "path": str(PROJECT_ROOT),
             "aliases": [],
             "skills": {},

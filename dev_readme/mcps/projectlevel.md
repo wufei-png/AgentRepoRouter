@@ -1,4 +1,4 @@
-搜索查看文档，opencode project level mcp怎么设置'/home/wufei/github.com/wufei-png/OrchAI/.opencode/mcp.json' 看着格式不对，看是否支持，如果支持改为正确的
+搜索查看文档，opencode project level mcp怎么设置'/home/wufei/github.com/wufei-png/ClawRouter/.opencode/mcp.json' 看着格式不对，看是否支持，如果支持改为正确的
 
 Based on my exhaustive research, here's the complete answer:
 ---

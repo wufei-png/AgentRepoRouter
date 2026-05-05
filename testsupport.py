@@ -263,7 +263,7 @@ def initialize_git_repo(repo_path: Path) -> None:
     commands = [
         ["git", "init", "-q"],
         ["git", "config", "user.email", "real-e2e@example.com"],
-        ["git", "config", "user.name", "OrchAI Real E2E"],
+        ["git", "config", "user.name", "ClawRouter Real E2E"],
         ["git", "add", "-A"],
         ["git", "commit", "-q", "-m", "baseline"],
     ]
@@ -289,7 +289,7 @@ def temporary_router_skill_override(
     repos: list[dict],
 ):
     workspace_skill_dir = agent_workspace / "skills" / "router"
-    backup_dir = workspace_skill_dir.with_name("router.__orchai_backup__")
+    backup_dir = workspace_skill_dir.with_name("router.__clawrouter_backup__")
 
     if backup_dir.exists():
         shutil.rmtree(backup_dir)
@@ -326,9 +326,9 @@ def build_judge_prompt(
     repo_diff: str,
     repo_test_output: str,
 ) -> str:
-    return f"""You are the judge for an OrchAI real e2e test.
+    return f"""You are the judge for a ClawRouter real e2e test.
 Return exactly one line in the format:
-ORCHAI_JUDGE {{"pass":true|false,"reasons":["..."]}}
+CLAWROUTER_JUDGE {{"pass":true|false,"reasons":["..."]}}
 
 Task:
 {task}

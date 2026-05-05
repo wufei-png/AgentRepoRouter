@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-# OrchAI 安装脚本
+# ClawRouter 安装脚本
 # 用法: curl -fsSL https://.../install.sh | bash
 
 RED='\033[0;31m'
@@ -949,7 +949,7 @@ deploy_skill() {
 # 主流程
 main() {
     echo "=========================================="
-    echo "  OrchAI Installation Script"
+    echo "  ClawRouter Installation Script"
     echo "=========================================="
     echo ""
 

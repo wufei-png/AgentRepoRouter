@@ -47,7 +47,7 @@ I'll search the codebase for how to run agents, OpenCode, and any scheduling/cro
 ---
 
 <tool-use data-tool-type="read" data-tool-name="read_file_v2">
-<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/OrchAI/CLAUDE.md</summary>
+<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/ClawRouter/CLAUDE.md</summary>
 
 </details>
 </tool-use>
@@ -55,7 +55,7 @@ I'll search the codebase for how to run agents, OpenCode, and any scheduling/cro
 ---
 
 <tool-use data-tool-type="read" data-tool-name="read_file_v2">
-<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/OrchAI/docs/ARCHITECTURE.md</summary>
+<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/ClawRouter/docs/ARCHITECTURE.md</summary>
 
 </details>
 </tool-use>
@@ -72,7 +72,7 @@ Parameters:
 ```json
 {
   "pattern": "opencode|OpenCode|schedule|cron|temporal",
-  "path": "/home/wufei/github.com/wufei-png/OrchAI",
+  "path": "/home/wufei/github.com/wufei-png/ClawRouter",
   "caseInsensitive": true
 }
 ```
@@ -82,7 +82,7 @@ Additional data:
 {
   "isPruned": true,
   "pattern": "opencode|OpenCode|schedule|cron|temporal",
-  "path": "/home/wufei/github.com/wufei-png/OrchAI",
+  "path": "/home/wufei/github.com/wufei-png/ClawRouter",
   "outputMode": "content",
   "totalFiles": 33,
   "totalMatches": 253,
@@ -208,7 +208,7 @@ Or they might use the OrchAI CLI if it has a way to run with a specific path. Le
 ---
 
 <tool-use data-tool-type="read" data-tool-name="read_file_v2">
-<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/OrchAI/orchai/cli.py</summary>
+<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/ClawRouter/orchai/cli.py</summary>
 
 </details>
 </tool-use>
@@ -216,7 +216,7 @@ Or they might use the OrchAI CLI if it has a way to run with a specific path. Le
 ---
 
 <tool-use data-tool-type="read" data-tool-name="read_file_v2">
-<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/OrchAI/orchai/acp_adapter.py</summary>
+<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/ClawRouter/orchai/acp_adapter.py</summary>
 
 </details>
 </tool-use>
@@ -224,7 +224,7 @@ Or they might use the OrchAI CLI if it has a way to run with a specific path. Le
 ---
 
 <tool-use data-tool-type="read" data-tool-name="read_file_v2">
-<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/OrchAI/README.md</summary>
+<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/ClawRouter/README.md</summary>
 
 </details>
 </tool-use>
@@ -269,7 +269,7 @@ Let me also verify the exact acpx command - README says `opencode "fix login bug
 ---
 
 <tool-use data-tool-type="read" data-tool-name="read_file_v2">
-<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/OrchAI/tests/e2e/test_real_cli.py</summary>
+<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/ClawRouter/tests/e2e/test_real_cli.py</summary>
 
 </details>
 </tool-use>
@@ -277,7 +277,7 @@ Let me also verify the exact acpx command - README says `opencode "fix login bug
 ---
 
 <tool-use data-tool-type="read" data-tool-name="read_file_v2">
-<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/OrchAI/demo.py</summary>
+<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/ClawRouter/demo.py</summary>
 
 </details>
 </tool-use>
@@ -371,7 +371,7 @@ Let me use list_dir or glob to see if there's a scripts folder. I'll just create
 <details>
 <summary>Tool use: **glob_file_search** • Searched codebase "undefined" • **0** result in **1** directory</summary>
 
-Directory: **/home/wufei/github.com/wufei-png/OrchAI** (0 file)
+Directory: **/home/wufei/github.com/wufei-png/ClawRouter** (0 file)
 
 </details>
 </tool-use>
@@ -397,7 +397,7 @@ Then run the script now and schedule for 1 hour. For scheduling I'll use (sleep 
 
 <tool-use data-tool-type="write" data-tool-name="edit_file_v2">
 
-<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/OrchAI/scripts/askany_metrics_review_prompt.txt</summary>
+<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/ClawRouter/scripts/askany_metrics_review_prompt.txt</summary>
 
 </details>
 
@@ -407,7 +407,7 @@ Then run the script now and schedule for 1 hour. For scheduling I'll use (sleep 
 
 <tool-use data-tool-type="write" data-tool-name="edit_file_v2">
 
-<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/OrchAI/scripts/run_askany_metrics_review.sh</summary>
+<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/ClawRouter/scripts/run_askany_metrics_review.sh</summary>
 
 </details>
 
@@ -433,10 +433,10 @@ Let me make the script executable and add a small README for the scripts. Then r
 ---
 
 <tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2">
-<details><summary>Tool use: **run_terminal_command_v2** • Run command: chmod +x /home/wufei/github.com/wufei-png/OrchAI/scripts/run_askany_metrics_review.sh</summary>
+<details><summary>Tool use: **run_terminal_command_v2** • Run command: chmod +x /home/wufei/github.com/wufei-png/ClawRouter/scripts/run_askany_metrics_review.sh</summary>
 
 ```bash
-chmod +x /home/wufei/github.com/wufei-png/OrchAI/scripts/run_askany_metrics_review.sh
+chmod +x /home/wufei/github.com/wufei-png/ClawRouter/scripts/run_askany_metrics_review.sh
 ```
 </details>
 </tool-use>
@@ -445,7 +445,7 @@ chmod +x /home/wufei/github.com/wufei-png/OrchAI/scripts/run_askany_metrics_revi
 
 <tool-use data-tool-type="write" data-tool-name="edit_file_v2">
 
-<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/OrchAI/scripts/README.md</summary>
+<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/ClawRouter/scripts/README.md</summary>
 
 </details>
 
@@ -490,11 +490,11 @@ I'll start the "run now" in background with output to a log file, and schedule t
 ---
 
 <tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2">
-<details><summary>Tool use: **run_terminal_command_v2** • Run command: cd /home/wufei/github.com/wufei-png/OrchAI && ./scripts/run_askany_metrics_review.sh > /tmp/askany_review_now.log 2>&1 &
+<details><summary>Tool use: **run_terminal_command_v2** • Run command: cd /home/wufei/github.com/wufei-png/ClawRouter && ./scripts/run_askany_metrics_review.sh > /tmp/askany_review_now.log 2>&1 &
 echo "PID (run now): $!"</summary>
 
 ```bash
-cd /home/wufei/github.com/wufei-png/OrchAI && ./scripts/run_askany_metrics_review.sh > /tmp/askany_review_now.log 2>&1 &
+cd /home/wufei/github.com/wufei-png/ClawRouter && ./scripts/run_askany_metrics_review.sh > /tmp/askany_review_now.log 2>&1 &
 echo "PID (run now): $!"
 ```
 
@@ -508,12 +508,12 @@ PID (run now): 10930
 ---
 
 <tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2">
-<details><summary>Tool use: **run_terminal_command_v2** • Run command: (sleep 3600 && /home/wufei/github.com/wufei-png/OrchAI/scripts/run_askany_metrics_review.sh) > /tmp/askany_review_1h.log 2>&1 &
+<details><summary>Tool use: **run_terminal_command_v2** • Run command: (sleep 3600 && /home/wufei/github.com/wufei-png/ClawRouter/scripts/run_askany_metrics_review.sh) > /tmp/askany_review_1h.log 2>&1 &
 echo "PID (scheduled in 1h): $!"
 echo "Scheduled run will start at approx. $(date -d '+1 hour' -Iseconds 2>/dev/null || date -v+1H -Iseconds 2>/dev/null)"</summary>
 
 ```bash
-(sleep 3600 && /home/wufei/github.com/wufei-png/OrchAI/scripts/run_askany_metrics_review.sh) > /tmp/askany_review_1h.log 2>&1 &
+(sleep 3600 && /home/wufei/github.com/wufei-png/ClawRouter/scripts/run_askany_metrics_review.sh) > /tmp/askany_review_1h.log 2>&1 &
 echo "PID (scheduled in 1h): $!"
 echo "Scheduled run will start at approx. $(date -d '+1 hour' -Iseconds 2>/dev/null || date -v+1H -Iseconds 2>/dev/null)"
 ```
@@ -583,14 +583,14 @@ Done. Let me summarize for the user.
 
 ```bash
 # 只「现在」跑一次
-cd /home/wufei/github.com/wufei-png/OrchAI
+cd /home/wufei/github.com/wufei-png/ClawRouter
 ./scripts/run_askany_metrics_review.sh
 
 # 只「一小时后」跑一次（后台，带日志）
-(sleep 3600 && /home/wufei/github.com/wufei-png/OrchAI/scripts/run_askany_metrics_review.sh) > /tmp/askany_review_1h.log 2>&1 &
+(sleep 3600 && /home/wufei/github.com/wufei-png/ClawRouter/scripts/run_askany_metrics_review.sh) > /tmp/askany_review_1h.log 2>&1 &
 
 # 若系统有 at：一小时后执行
-echo "/home/wufei/github.com/wufei-png/OrchAI/scripts/run_askany_metrics_review.sh" | at now + 1 hour
+echo "/home/wufei/github.com/wufei-png/ClawRouter/scripts/run_askany_metrics_review.sh" | at now + 1 hour
 ```
 
 AskAny 路径通过脚本里的 `ASKANY_DIR` 写死为 `/home/wufei/github.com/wufei-png/AskAny`，要改路径可以：
@@ -624,7 +624,7 @@ So I need to:
 4. Schedule: 3 hours from now - run with Langfuse tracing and RAGAS RAG metrics prompt
 
 Let me first kill the scheduled 1-hour task. I need to find the process - it was PID 10969 for the sleep. That might have been from a previous shell session. Let me try to find and kill any sleep process that's running our script, or we can just start fresh - the user said "先停止第二个任务" so stop the second task. The second task was the one running in 1 hour. I'll need to find that process. Actually the PIDs I gave were from when we ran the commands - those processes might still be running. Let me try `pkill -f "sleep 3600"` or find the specific sleep that's running with our script. Actually the command was `(sleep 3600 && ...)` so the process would be "sleep 3600" - but there could be other sleep 3600 processes. More precise: we could look for the one that has our script path in the command line. Let me use `pgrep -f "askany_metrics_review"` or `pkill -f "run_askany_metrics_review"` - but the sleep process wouldn't have that in the command, the subshell would. So the parent might be bash with the script path. Let me try to kill by searching for "askany_review_1h" in the command line - that was the log file. So `pkill -f "askany_review_1h"` might kill the process that was started with that redirection. Actually the command was:
-(sleep 3600 && /home/wufei/github.com/wufei-png/OrchAI/scripts/run_askany_metrics_review.sh) > /tmp/askany_review_1h.log 2>&1 &
+(sleep 3600 && /home/wufei/github.com/wufei-png/ClawRouter/scripts/run_askany_metrics_review.sh) > /tmp/askany_review_1h.log 2>&1 &
 So the process in background could be a bash process running "sleep 3600 && ...". So we need to kill that. I'll try: `pkill -f "run_askany_metrics_review"` - that might kill the first running task too! The first one was already running the script (the opencode execution). So we don't want to kill the first one. We want to kill only the "scheduled in 1 hour" job. The scheduled job is the one where the main process is "sleep 3600". So we could list processes and find the one that is "sleep 3600" with our script path in the same process tree. Or we could kill all "sleep 3600" - that might be too broad. Safer: look for processes with "run_askany_metrics_review" that are NOT the actual npx run. The one we want to kill is the bash that's running (sleep 3600 && ...). So when we do ps aux we might see:
 - bash -c (sleep 3600 && ...)
 - sleep 3600
@@ -650,7 +650,7 @@ pgrep -af "askany_review_1h|sleep 3600.*run_askany" 2>/dev/null || ps aux | grep
 ```
 
 ```
-10969 /usr/bin/zsh -c (sleep 3600 &amp;&amp; /home/wufei/github.com/wufei-png/OrchAI/scripts/run_askany_metrics_review.sh) &gt; /tmp/askany_review_1h.log 2&gt;&amp;1 &amp; echo "PID (scheduled in 1h): $!" echo "Scheduled run will start at approx. $(date -d '+1 hour' -Iseconds 2&gt;/dev/null || date -v+1H -Iseconds 2&gt;/dev/null)"
+10969 /usr/bin/zsh -c (sleep 3600 &amp;&amp; /home/wufei/github.com/wufei-png/ClawRouter/scripts/run_askany_metrics_review.sh) &gt; /tmp/askany_review_1h.log 2&gt;&amp;1 &amp; echo "PID (scheduled in 1h): $!" echo "Scheduled run will start at approx. $(date -d '+1 hour' -Iseconds 2&gt;/dev/null || date -v+1H -Iseconds 2&gt;/dev/null)"
 13463 /usr/bin/zsh -c pgrep -af "askany_review_1h|sleep 3600.*run_askany" 2&gt;/dev/null || ps aux | grep -E "askany_review|run_askany_metrics" | grep -v grep
 
 ```
@@ -660,7 +660,7 @@ pgrep -af "askany_review_1h|sleep 3600.*run_askany" 2>/dev/null || ps aux | grep
 ---
 
 <tool-use data-tool-type="read" data-tool-name="read_file_v2">
-<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/OrchAI/scripts/askany_metrics_review_prompt.txt</summary>
+<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/ClawRouter/scripts/askany_metrics_review_prompt.txt</summary>
 
 </details>
 </tool-use>
@@ -668,7 +668,7 @@ pgrep -af "askany_review_1h|sleep 3600.*run_askany" 2>/dev/null || ps aux | grep
 ---
 
 <tool-use data-tool-type="read" data-tool-name="read_file_v2">
-<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/OrchAI/scripts/run_askany_metrics_review.sh</summary>
+<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/ClawRouter/scripts/run_askany_metrics_review.sh</summary>
 
 </details>
 </tool-use>
@@ -719,7 +719,7 @@ Killed 1h scheduled task (PID 10969)
 
 <tool-use data-tool-type="write" data-tool-name="edit_file_v2">
 
-<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/OrchAI/scripts/askany_sse_streaming_prompt.txt</summary>
+<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/ClawRouter/scripts/askany_sse_streaming_prompt.txt</summary>
 
 </details>
 
@@ -729,7 +729,7 @@ Killed 1h scheduled task (PID 10969)
 
 <tool-use data-tool-type="write" data-tool-name="edit_file_v2">
 
-<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/OrchAI/scripts/askany_langfuse_ragas_prompt.txt</summary>
+<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/ClawRouter/scripts/askany_langfuse_ragas_prompt.txt</summary>
 
 </details>
 
@@ -752,7 +752,7 @@ Good. Now I need to update the script to accept an optional prompt file argument
 
 <tool-use data-tool-type="write" data-tool-name="edit_file_v2">
 
-<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/OrchAI/scripts/run_askany_metrics_review.sh</summary>
+<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/ClawRouter/scripts/run_askany_metrics_review.sh</summary>
 
 </details>
 
@@ -776,17 +776,17 @@ Good. Now schedule:
 ---
 
 <tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2">
-<details><summary>Tool use: **run_terminal_command_v2** • Run command: (sleep 7200 && /home/wufei/github.com/wufei-png/OrchAI/scripts/run_askany_metrics_review.sh askany_sse_streaming_prompt.txt) > /tmp/askany_review_sse_2h.log 2>&1 &
+<details><summary>Tool use: **run_terminal_command_v2** • Run command: (sleep 7200 && /home/wufei/github.com/wufei-png/ClawRouter/scripts/run_askany_metrics_review.sh askany_sse_streaming_prompt.txt) > /tmp/askany_review_sse_2h.log 2>&1 &
 echo "PID (2h, SSE streaming): $!"
-(sleep 10800 && /home/wufei/github.com/wufei-png/OrchAI/scripts/run_askany_metrics_review.sh askany_langfuse_ragas_prompt.txt) > /tmp/askany_review_langfuse_ragas_3h.log 2>&1 &
+(sleep 10800 && /home/wufei/github.com/wufei-png/ClawRouter/scripts/run_askany_metrics_review.sh askany_langfuse_ragas_prompt.txt) > /tmp/askany_review_langfuse_ragas_3h.log 2>&1 &
 echo "PID (3h, Langfuse+RAGAS): $!"
 echo "2h run at approx: $(date -d '+2 hours' -Iseconds 2>/dev/null || date -v+2H -Iseconds 2>/dev/null)"
 echo "3h run at approx: $(date -d '+3 hours' -Iseconds 2>/dev/null || date -v+3H -Iseconds 2>/dev/null)"</summary>
 
 ```bash
-(sleep 7200 && /home/wufei/github.com/wufei-png/OrchAI/scripts/run_askany_metrics_review.sh askany_sse_streaming_prompt.txt) > /tmp/askany_review_sse_2h.log 2>&1 &
+(sleep 7200 && /home/wufei/github.com/wufei-png/ClawRouter/scripts/run_askany_metrics_review.sh askany_sse_streaming_prompt.txt) > /tmp/askany_review_sse_2h.log 2>&1 &
 echo "PID (2h, SSE streaming): $!"
-(sleep 10800 && /home/wufei/github.com/wufei-png/OrchAI/scripts/run_askany_metrics_review.sh askany_langfuse_ragas_prompt.txt) > /tmp/askany_review_langfuse_ragas_3h.log 2>&1 &
+(sleep 10800 && /home/wufei/github.com/wufei-png/ClawRouter/scripts/run_askany_metrics_review.sh askany_langfuse_ragas_prompt.txt) > /tmp/askany_review_langfuse_ragas_3h.log 2>&1 &
 echo "PID (3h, Langfuse+RAGAS): $!"
 echo "2h run at approx: $(date -d '+2 hours' -Iseconds 2>/dev/null || date -v+2H -Iseconds 2>/dev/null)"
 echo "3h run at approx: $(date -d '+3 hours' -Iseconds 2>/dev/null || date -v+3H -Iseconds 2>/dev/null)"
@@ -806,7 +806,7 @@ PID (3h, Langfuse+RAGAS): 14027
 
 <tool-use data-tool-type="write" data-tool-name="edit_file_v2">
 
-<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/OrchAI/scripts/README.md</summary>
+<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/ClawRouter/scripts/README.md</summary>
 
 </details>
 
@@ -829,7 +829,7 @@ Done. Let me also update the README with the new schedule examples for 2h and 3h
 
 <tool-use data-tool-type="write" data-tool-name="edit_file_v2">
 
-<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/OrchAI/scripts/README.md</summary>
+<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/ClawRouter/scripts/README.md</summary>
 
 </details>
 
@@ -839,7 +839,7 @@ Done. Let me also update the README with the new schedule examples for 2h and 3h
 
 <tool-use data-tool-type="write" data-tool-name="edit_file_v2">
 
-<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/OrchAI/scripts/README.md</summary>
+<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/ClawRouter/scripts/README.md</summary>
 
 </details>
 
@@ -922,7 +922,7 @@ Let me create a quick test prompt file and run the script with it.
 
 <tool-use data-tool-type="write" data-tool-name="edit_file_v2">
 
-<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/OrchAI/scripts/askany_test_prompt.txt</summary>
+<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/ClawRouter/scripts/askany_test_prompt.txt</summary>
 
 </details>
 
@@ -931,7 +931,7 @@ Let me create a quick test prompt file and run the script with it.
 ---
 
 <tool-use data-tool-type="read" data-tool-name="read_file_v2">
-<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/OrchAI/scripts/run_askany_metrics_review.sh</summary>
+<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/ClawRouter/scripts/run_askany_metrics_review.sh</summary>
 
 </details>
 </tool-use>
@@ -952,10 +952,10 @@ Good. Now run the script with the test prompt file. This will actually invoke Op
 ---
 
 <tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2">
-<details><summary>Tool use: **run_terminal_command_v2** • Run command: cd /home/wufei/github.com/wufei-png/OrchAI && ./scripts/run_askany_metrics_review.sh askany_test_prompt.txt</summary>
+<details><summary>Tool use: **run_terminal_command_v2** • Run command: cd /home/wufei/github.com/wufei-png/ClawRouter && ./scripts/run_askany_metrics_review.sh askany_test_prompt.txt</summary>
 
 ```bash
-cd /home/wufei/github.com/wufei-png/OrchAI && ./scripts/run_askany_metrics_review.sh askany_test_prompt.txt
+cd /home/wufei/github.com/wufei-png/ClawRouter && ./scripts/run_askany_metrics_review.sh askany_test_prompt.txt
 ```
 
 ```
@@ -1027,7 +1027,7 @@ Steps:
 ---
 
 <tool-use data-tool-type="read" data-tool-name="read_file_v2">
-<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/OrchAI/scripts/README.md</summary>
+<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/ClawRouter/scripts/README.md</summary>
 
 </details>
 </tool-use>
@@ -1038,7 +1038,7 @@ Steps:
 <details>
 <summary>Tool use: **glob_file_search** • Searched codebase "undefined" • **6** results in **1** directory</summary>
 
-Directory: **/home/wufei/github.com/wufei-png/OrchAI/scripts** (6 files)
+Directory: **/home/wufei/github.com/wufei-png/ClawRouter/scripts** (6 files)
 
 | File |
 |------|
@@ -1064,7 +1064,7 @@ I'll:
    - 2h: SSE -> scripts/logs/askany_review_sse_2h.log
    - 3h: Langfuse+RAGAS -> scripts/logs/askany_review_langfuse_ragas_3h.log
    - 4h: need a 4th - I'll use metrics again for 4h or we could do another. User said "这四个定时任务" - I'll do metrics, sse, langfuse_ragas, and for 4h I could do metrics again (second run) or create a 4th prompt. I'll do: 1h=metrics, 2h=SSE, 3h=Langfuse+RAGAS, 4h=metrics (or same order again). Actually "四个定时任务" might mean 4 tasks with the 4 different timings, and the 3 prompt types could cycle. So 4th task at 4h - I'll use metrics again so we have: 1h metrics, 2h SSE, 3h Langfuse+RAGAS, 4h metrics. Or 4h could be "all" or a summary - simpler to just repeat one. I'll use metrics for 4h.
-4. Use REPO_ROOT in the script so the log path is under the project - scripts/logs/ need to be relative to repo. The script is run from a subshell with sleep, so we need absolute path. REPO_ROOT = /home/wufei/github.com/wufei-png/OrchAI, so logs go to /home/wufei/github.com/wufei-png/OrchAI/scripts/logs/
+4. Use REPO_ROOT in the script so the log path is under the project - scripts/logs/ need to be relative to repo. The script is run from a subshell with sleep, so we need absolute path. REPO_ROOT = /home/wufei/github.com/wufei-png/ClawRouter, so logs go to /home/wufei/github.com/wufei-png/ClawRouter/scripts/logs/
 </details></think>
 
 ---
@@ -1076,10 +1076,10 @@ I'll:
 ---
 
 <tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2">
-<details><summary>Tool use: **run_terminal_command_v2** • Run command: mkdir -p /home/wufei/github.com/wufei-png/OrchAI/scripts/logs && pkill -f "run_askany_metrics_review.sh" 2>/dev/null; pkill -f "askany_review.*\.log" 2>/dev/null; echo "Cleaned old scheduled jobs (if any)"</summary>
+<details><summary>Tool use: **run_terminal_command_v2** • Run command: mkdir -p /home/wufei/github.com/wufei-png/ClawRouter/scripts/logs && pkill -f "run_askany_metrics_review.sh" 2>/dev/null; pkill -f "askany_review.*\.log" 2>/dev/null; echo "Cleaned old scheduled jobs (if any)"</summary>
 
 ```bash
-mkdir -p /home/wufei/github.com/wufei-png/OrchAI/scripts/logs && pkill -f "run_askany_metrics_review.sh" 2>/dev/null; pkill -f "askany_review.*\.log" 2>/dev/null; echo "Cleaned old scheduled jobs (if any)"
+mkdir -p /home/wufei/github.com/wufei-png/ClawRouter/scripts/logs && pkill -f "run_askany_metrics_review.sh" 2>/dev/null; pkill -f "askany_review.*\.log" 2>/dev/null; echo "Cleaned old scheduled jobs (if any)"
 ```
 </details>
 </tool-use>
@@ -1100,7 +1100,7 @@ pkill might have killed the run_askany_metrics_review.sh - that could kill the s
 ---
 
 <tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2">
-<details><summary>Tool use: **run_terminal_command_v2** • Run command: ORCHAI_SCRIPTS="/home/wufei/github.com/wufei-png/OrchAI/scripts"
+<details><summary>Tool use: **run_terminal_command_v2** • Run command: ORCHAI_SCRIPTS="/home/wufei/github.com/wufei-png/ClawRouter/scripts"
 LOGS="${ORCHAI_SCRIPTS}/logs"
 
 # 1h - metrics
@@ -1130,7 +1130,7 @@ echo "  3h: $(date -d '+3 hours' -Iseconds 2>/dev/null)"
 echo "  4h: $(date -d '+4 hours' -Iseconds 2>/dev/null)"</summary>
 
 ```bash
-ORCHAI_SCRIPTS="/home/wufei/github.com/wufei-png/OrchAI/scripts"
+ORCHAI_SCRIPTS="/home/wufei/github.com/wufei-png/ClawRouter/scripts"
 LOGS="${ORCHAI_SCRIPTS}/logs"
 
 # 1h - metrics
@@ -1166,7 +1166,7 @@ echo "  4h: $(date -d '+4 hours' -Iseconds 2>/dev/null)"
 3h (Langfuse+RAGAS): PID 17482
 4h (metrics): PID 17484
 
-Logs: /home/wufei/github.com/wufei-png/OrchAI/scripts/logs/
+Logs: /home/wufei/github.com/wufei-png/ClawRouter/scripts/logs/
 total 8
 drwxr-xr-x 2 wufei wufei 4096 Mar 16 03:24 .
 drwxr-xr-x 3 wufei wufei 4096 Mar 16 03:24 ..
@@ -1212,7 +1212,7 @@ Parameters:
 ```json
 {
   "pattern": "scripts/logs|\\.log",
-  "path": "/home/wufei/github.com/wufei-png/OrchAI/.gitignore",
+  "path": "/home/wufei/github.com/wufei-png/ClawRouter/.gitignore",
   "caseInsensitive": false
 }
 ```
@@ -1222,7 +1222,7 @@ Additional data:
 {
   "isPruned": true,
   "pattern": "scripts/logs|\\.log",
-  "path": "/home/wufei/github.com/wufei-png/OrchAI/.gitignore",
+  "path": "/home/wufei/github.com/wufei-png/ClawRouter/.gitignore",
   "outputMode": "content",
   "totalFiles": 0,
   "totalMatches": 0,
@@ -1238,7 +1238,7 @@ Status: **completed**
 ---
 
 <tool-use data-tool-type="read" data-tool-name="read_file_v2">
-<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/OrchAI/.gitignore</summary>
+<details><summary>Tool use: **read_file_v2** • Read file: /home/wufei/github.com/wufei-png/ClawRouter/.gitignore</summary>
 
 </details>
 </tool-use>
@@ -1260,7 +1260,7 @@ I'll add scripts/logs/*.log or just scripts/logs/ to gitignore so the log output
 
 <tool-use data-tool-type="write" data-tool-name="edit_file_v2">
 
-<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/OrchAI/.gitignore</summary>
+<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/ClawRouter/.gitignore</summary>
 
 </details>
 
@@ -1270,7 +1270,7 @@ I'll add scripts/logs/*.log or just scripts/logs/ to gitignore so the log output
 
 <tool-use data-tool-type="write" data-tool-name="edit_file_v2">
 
-<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/OrchAI/scripts/README.md</summary>
+<details><summary>Tool use: **edit_file_v2** • Edit file: /home/wufei/github.com/wufei-png/ClawRouter/scripts/README.md</summary>
 
 </details>
 
@@ -1306,7 +1306,7 @@ I should add a note in README that the 4 scheduled tasks were started and list t
 查看某次任务输出示例：
 
 ```bash
-tail -f /home/wufei/github.com/wufei-png/OrchAI/scripts/logs/askany_review_metrics_1h.log
+tail -f /home/wufei/github.com/wufei-png/ClawRouter/scripts/logs/askany_review_metrics_1h.log
 ```
 
 ---
