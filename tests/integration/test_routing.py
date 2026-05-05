@@ -46,3 +46,45 @@ def test_manual_install_deploys_skill_and_config_into_router_directory(tmp_path)
     }
 
     assert "读取 `references/repo_mappings.json`" in deployed_skill_path(home_dir).read_text()
+
+
+def test_existing_router_directory_can_be_deleted_and_overwritten(tmp_path):
+    home_dir = tmp_path / "home"
+    router_dir = home_dir / ".openclaw" / "skills" / "router"
+    fake_bin = make_fake_bin(
+        tmp_path,
+        {"node", "git", "openclaw", "claude", "opencode", "agent", "codex"},
+    )
+
+    (router_dir / "references").mkdir(parents=True)
+    (router_dir / "old.txt").write_text("old-router")
+
+    user_input = manual_install_input("1", "1,2", [str(PROJECT_ROOT)]) + "1\n"
+    result = run_install(home_dir, user_input, with_fake_path(fake_bin))
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert not (router_dir / "old.txt").exists()
+    assert deployed_skill_path(home_dir).exists()
+    assert not (home_dir / ".openclaw" / "skills" / "router_backup_0").exists()
+
+
+def test_existing_router_directory_can_be_backed_up_with_incrementing_suffix(tmp_path):
+    home_dir = tmp_path / "home"
+    skills_dir = home_dir / ".openclaw" / "skills"
+    router_dir = skills_dir / "router"
+    fake_bin = make_fake_bin(
+        tmp_path,
+        {"node", "git", "openclaw", "claude", "opencode", "agent", "codex"},
+    )
+
+    (router_dir / "references").mkdir(parents=True)
+    (router_dir / "old.txt").write_text("old-router")
+    (skills_dir / "router_backup_0").mkdir(parents=True)
+
+    user_input = manual_install_input("1", "1,2", [str(PROJECT_ROOT)]) + "2\n"
+    result = run_install(home_dir, user_input, with_fake_path(fake_bin))
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert (skills_dir / "router_backup_1").exists()
+    assert (skills_dir / "router_backup_1" / "old.txt").read_text() == "old-router"
+    assert deployed_skill_path(home_dir).exists()

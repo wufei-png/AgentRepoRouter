@@ -32,6 +32,23 @@ MENU_CURSOR=0
 MENU_LINES=0
 MENU_MESSAGE=""
 
+# 查找下一个可用备份目录
+next_router_backup_dir() {
+    local skills_dir
+    local backup_index=0
+    local backup_dir=""
+
+    skills_dir="$(dirname "$ROUTER_SKILL_DIR")"
+    while true; do
+        backup_dir="$skills_dir/router_backup_$backup_index"
+        if [ ! -e "$backup_dir" ]; then
+            echo "$backup_dir"
+            return 0
+        fi
+        backup_index=$((backup_index + 1))
+    done
+}
+
 # 检测 CLI 是否可用
 check_cli() {
     command -v "$1" &>/dev/null
@@ -609,6 +626,64 @@ discover_projects() {
     done
 }
 
+# 处理已有 router 目录
+prepare_router_directory() {
+    local backup_dir=""
+
+    if [ ! -e "$ROUTER_SKILL_DIR" ]; then
+        return
+    fi
+
+    echo "Existing router skill directory detected: $ROUTER_SKILL_DIR"
+
+    if can_use_interactive_menu; then
+        MENU_LABELS=("Delete and overwrite" "Backup existing router")
+        MENU_VALUES=("delete" "backup")
+        MENU_ENABLED=(1 1)
+        run_menu "Router skill already exists" "single" "Please choose how to handle the existing router directory."
+        case "$MENU_RESULT" in
+            delete)
+                rm -rf "$ROUTER_SKILL_DIR"
+                echo -e "${GREEN}✓ Deleted existing router directory${NC}"
+                ;;
+            backup)
+                backup_dir="$(next_router_backup_dir)"
+                mv "$ROUTER_SKILL_DIR" "$backup_dir"
+                echo -e "${GREEN}✓ Backed up existing router directory to $backup_dir${NC}"
+                ;;
+        esac
+        echo ""
+        return
+    fi
+
+    echo "Router skill already exists:"
+    echo "  [1] Delete and overwrite"
+    echo "  [2] Backup existing router"
+    echo ""
+
+    while true; do
+        read_user_line "Enter choice [1-2]: "
+        choice="$REPLY"
+        case $choice in
+            1)
+                rm -rf "$ROUTER_SKILL_DIR"
+                echo -e "${GREEN}✓ Deleted existing router directory${NC}"
+                break
+                ;;
+            2)
+                backup_dir="$(next_router_backup_dir)"
+                mv "$ROUTER_SKILL_DIR" "$backup_dir"
+                echo -e "${GREEN}✓ Backed up existing router directory to $backup_dir${NC}"
+                break
+                ;;
+            *)
+                echo -e "${RED}Invalid choice. Please try again.${NC}"
+                ;;
+        esac
+    done
+    echo ""
+}
+
 # 生成 repo_mappings.json
 generate_config() {
     echo "Generating $ROUTER_CONFIG_PATH..."
@@ -740,6 +815,7 @@ main() {
     select_language
     select_clis
     discover_projects
+    prepare_router_directory
     generate_config
     deploy_skill
 
