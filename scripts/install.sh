@@ -12,6 +12,9 @@ NC='\033[0m' # No Color
 ROUTER_SKILL_DIR="$HOME/.openclaw/skills/router"
 ROUTER_CONFIG_PATH="$ROUTER_SKILL_DIR/references/repo_mappings.json"
 REPO_MAPPINGS_SCHEMA_VERSION=1
+CLAWROUTER_REPO="${CLAWROUTER_REPO:-wufei-png/ClawRouter}"
+CLAWROUTER_BRANCH="${CLAWROUTER_BRANCH:-main}"
+REMOTE_RAW_BASE_URL="https://raw.githubusercontent.com/${CLAWROUTER_REPO}/${CLAWROUTER_BRANCH}"
 TTY_FD=9
 TTY_AVAILABLE=0
 if exec 9<>/dev/tty 2>/dev/null; then
@@ -31,6 +34,64 @@ MENU_RESULTS=()
 MENU_CURSOR=0
 MENU_LINES=0
 MENU_MESSAGE=""
+REMOTE_CACHE_DIR=""
+
+cleanup_remote_cache() {
+    if [ -n "$REMOTE_CACHE_DIR" ] && [ -d "$REMOTE_CACHE_DIR" ]; then
+        rm -rf "$REMOTE_CACHE_DIR"
+    fi
+}
+
+ensure_remote_cache_dir() {
+    if [ -z "$REMOTE_CACHE_DIR" ]; then
+        REMOTE_CACHE_DIR="$(mktemp -d)"
+        trap cleanup_remote_cache EXIT
+    fi
+}
+
+download_remote_file() {
+    local remote_path="$1"
+    local dest_path="$2"
+    local dest_dir
+    local remote_url="${REMOTE_RAW_BASE_URL}/${remote_path}"
+
+    dest_dir="$(dirname "$dest_path")"
+    mkdir -p "$dest_dir"
+    curl -fsSL "$remote_url" -o "$dest_path"
+}
+
+resolve_repo_file() {
+    local local_path="$1"
+    local remote_path="$2"
+    local required="${3:-1}"
+    local cached_path=""
+
+    if [ -f "$local_path" ]; then
+        echo "$local_path"
+        return 0
+    fi
+
+    ensure_remote_cache_dir
+    cached_path="$REMOTE_CACHE_DIR/$remote_path"
+    if [ -f "$cached_path" ]; then
+        echo "$cached_path"
+        return 0
+    fi
+
+    if download_remote_file "$remote_path" "$cached_path"; then
+        echo "$cached_path"
+        return 0
+    fi
+
+    if [ "$required" -eq 1 ]; then
+        echo -e "${RED}Error: Failed to fetch required file: ${remote_path}${NC}"
+        echo -e "${YELLOW}Tried local path: ${local_path}${NC}"
+        echo -e "${YELLOW}Tried remote URL: ${REMOTE_RAW_BASE_URL}/${remote_path}${NC}"
+        exit 1
+    fi
+
+    return 1
+}
 
 # 查找下一个可用备份目录
 next_router_backup_dir() {
@@ -299,8 +360,10 @@ count_installed_clis() {
 
 validate_repo_mappings() {
     local script_dir
+    local validate_script
     script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    "$script_dir/validate_repo_mappings.sh" "$1" >/dev/null
+    validate_script="$(resolve_repo_file "$script_dir/validate_repo_mappings.sh" "scripts/validate_repo_mappings.sh" 1)"
+    bash "$validate_script" "$1" >/dev/null
 }
 
 # 检测 OpenClaw 是否安装
@@ -886,21 +949,22 @@ deploy_skill() {
 
     # Skill 源文件位置（相对于脚本位置）
     local script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    local skill_zh="$script_dir/../skills/router/SKILL.zh.md"
-    local skill_en="$script_dir/../skills/router/SKILL.en.md"
-    local references_src_dir="$script_dir/../skills/router/references"
+    local skill_zh_local="$script_dir/../skills/router/SKILL.zh.md"
+    local skill_en_local="$script_dir/../skills/router/SKILL.en.md"
+    local guide_zh_local="$script_dir/../skills/router/references/guide.zh.md"
+    local guide_en_local="$script_dir/../skills/router/references/guide.en.md"
+    local skill_zh=""
+    local skill_en=""
+    local guide_zh=""
+    local guide_en=""
     local skill_dest_dir="$ROUTER_SKILL_DIR"
     local skill_dest="$skill_dest_dir/SKILL.md"
     local references_dest_dir="$skill_dest_dir/references"
-    local reference_path=""
-    local reference_name=""
 
-    # 验证源文件存在
-    if [ ! -f "$skill_zh" ] || [ ! -f "$skill_en" ]; then
-        echo -e "${RED}Error: Skill files not found in $script_dir/../skills/router/${NC}"
-        echo "Please ensure SKILL.zh.md and SKILL.en.md exist."
-        exit 1
-    fi
+    skill_zh="$(resolve_repo_file "$skill_zh_local" "skills/router/SKILL.zh.md" 1)"
+    skill_en="$(resolve_repo_file "$skill_en_local" "skills/router/SKILL.en.md" 1)"
+    guide_zh="$(resolve_repo_file "$guide_zh_local" "skills/router/references/guide.zh.md" 0 || true)"
+    guide_en="$(resolve_repo_file "$guide_en_local" "skills/router/references/guide.en.md" 0 || true)"
 
     # 创建目标目录
     mkdir -p "$skill_dest_dir"
@@ -917,30 +981,17 @@ deploy_skill() {
         echo -e "${GREEN}✓ Deployed English version of Router Skill${NC}"
     fi
 
-    # 同步 references 中的文档，不覆盖运行时生成的 repo_mappings.json
-    if [ -d "$references_src_dir" ]; then
-        find "$references_src_dir" -maxdepth 1 -type f ! -name "repo_mappings.json" | while IFS= read -r reference_path; do
-            reference_name="$(basename "$reference_path")"
-            case "$reference_name" in
-                *.zh.md)
-                    if [ "$SKILL_LANG" = "zh" ]; then
-                        cp "$reference_path" "$references_dest_dir/"
-                    else
-                        rm -f "$references_dest_dir/$reference_name"
-                    fi
-                    ;;
-                *.en.md)
-                    if [ "$SKILL_LANG" = "en" ]; then
-                        cp "$reference_path" "$references_dest_dir/"
-                    else
-                        rm -f "$references_dest_dir/$reference_name"
-                    fi
-                    ;;
-                *)
-                    cp "$reference_path" "$references_dest_dir/"
-                    ;;
-            esac
-        done
+    # 同步 guide 文档，不覆盖运行时生成的 repo_mappings.json
+    if [ "$SKILL_LANG" = "zh" ]; then
+        if [ -n "$guide_zh" ] && [ -f "$guide_zh" ]; then
+            cp "$guide_zh" "$references_dest_dir/guide.zh.md"
+        fi
+        rm -f "$references_dest_dir/guide.en.md"
+    else
+        if [ -n "$guide_en" ] && [ -f "$guide_en" ]; then
+            cp "$guide_en" "$references_dest_dir/guide.en.md"
+        fi
+        rm -f "$references_dest_dir/guide.zh.md"
     fi
 
     echo ""
