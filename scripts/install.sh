@@ -15,11 +15,21 @@ REPO_MAPPINGS_SCHEMA_VERSION=1
 CLAWROUTER_REPO="${CLAWROUTER_REPO:-wufei-png/ClawRouter}"
 CLAWROUTER_BRANCH="${CLAWROUTER_BRANCH:-main}"
 REMOTE_RAW_BASE_URL="https://raw.githubusercontent.com/${CLAWROUTER_REPO}/${CLAWROUTER_BRANCH}"
+# 与 opencode-session-toolkit 的 install 一致：默认始终从 GitHub raw 拉取，不依赖脚本旁仓库文件。
+# 设为 true/1/yes 时优先使用脚本目录旁的本地文件（离线或开发调试用）。
+CLAWROUTER_USE_LOCAL_CACHE="${CLAWROUTER_USE_LOCAL_CACHE:-false}"
 TTY_FD=9
 TTY_AVAILABLE=0
 if exec 9<>/dev/tty 2>/dev/null; then
     TTY_AVAILABLE=1
 fi
+
+clawrouter_use_local_cache() {
+    case "${CLAWROUTER_USE_LOCAL_CACHE}" in
+        1|true|TRUE|True|yes|YES|on|ON) return 0 ;;
+        *) return 1 ;;
+    esac
+}
 
 # 默认值
 SELECTED_CLIS=()
@@ -34,21 +44,8 @@ MENU_RESULTS=()
 MENU_CURSOR=0
 MENU_LINES=0
 MENU_MESSAGE=""
-REMOTE_CACHE_DIR=""
 
-cleanup_remote_cache() {
-    if [ -n "$REMOTE_CACHE_DIR" ] && [ -d "$REMOTE_CACHE_DIR" ]; then
-        rm -rf "$REMOTE_CACHE_DIR"
-    fi
-}
-
-ensure_remote_cache_dir() {
-    if [ -z "$REMOTE_CACHE_DIR" ]; then
-        REMOTE_CACHE_DIR="$(mktemp -d)"
-        trap cleanup_remote_cache EXIT
-    fi
-}
-
+# 参考 https://raw.githubusercontent.com/wufei-png/opencode-session-toolkit/main/install.sh
 download_remote_file() {
     local remote_path="$1"
     local dest_path="$2"
@@ -57,39 +54,12 @@ download_remote_file() {
 
     dest_dir="$(dirname "$dest_path")"
     mkdir -p "$dest_dir"
-    curl -fsSL "$remote_url" -o "$dest_path"
-}
-
-resolve_repo_file() {
-    local local_path="$1"
-    local remote_path="$2"
-    local required="${3:-1}"
-    local cached_path=""
-
-    if [ -f "$local_path" ]; then
-        echo "$local_path"
+    echo "  Downloading ${remote_path}..."
+    if curl -fsSL "$remote_url" -o "$dest_path"; then
+        echo -e "    ${GREEN}✓${NC} ${remote_path}"
         return 0
     fi
-
-    ensure_remote_cache_dir
-    cached_path="$REMOTE_CACHE_DIR/$remote_path"
-    if [ -f "$cached_path" ]; then
-        echo "$cached_path"
-        return 0
-    fi
-
-    if download_remote_file "$remote_path" "$cached_path"; then
-        echo "$cached_path"
-        return 0
-    fi
-
-    if [ "$required" -eq 1 ]; then
-        echo -e "${RED}Error: Failed to fetch required file: ${remote_path}${NC}"
-        echo -e "${YELLOW}Tried local path: ${local_path}${NC}"
-        echo -e "${YELLOW}Tried remote URL: ${REMOTE_RAW_BASE_URL}/${remote_path}${NC}"
-        exit 1
-    fi
-
+    echo -e "    ${RED}✗${NC} Failed to download ${remote_path}"
     return 1
 }
 
@@ -360,10 +330,28 @@ count_installed_clis() {
 
 validate_repo_mappings() {
     local script_dir
-    local validate_script
+    local validate_path
+    local tmp_validate=""
+
     script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    validate_script="$(resolve_repo_file "$script_dir/validate_repo_mappings.sh" "scripts/validate_repo_mappings.sh" 1)"
-    bash "$validate_script" "$1" >/dev/null
+    validate_path="$script_dir/validate_repo_mappings.sh"
+
+    if clawrouter_use_local_cache && [ -f "$validate_path" ]; then
+        bash "$validate_path" "$1" >/dev/null
+        return
+    fi
+
+    tmp_validate="$(mktemp)"
+    if ! download_remote_file "scripts/validate_repo_mappings.sh" "$tmp_validate"; then
+        rm -f "$tmp_validate"
+        echo -e "${RED}Error: Could not download scripts/validate_repo_mappings.sh${NC}"
+        echo -e "${YELLOW}URL: ${REMOTE_RAW_BASE_URL}/scripts/validate_repo_mappings.sh${NC}"
+        echo -e "${YELLOW}Or set CLAWROUTER_USE_LOCAL_CACHE=true when running from a full repo clone.${NC}"
+        exit 1
+    fi
+    chmod +x "$tmp_validate" 2>/dev/null || true
+    bash "$tmp_validate" "$1" >/dev/null
+    rm -f "$tmp_validate"
 }
 
 # 检测 OpenClaw 是否安装
@@ -947,24 +935,69 @@ EOF
 deploy_skill() {
     echo "Deploying Router Skill..."
 
-    # Skill 源文件位置（相对于脚本位置）
+    # Skill 源文件位置（相对于脚本位置）；仅 CLAWROUTER_USE_LOCAL_CACHE=true 时使用
     local script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     local skill_zh_local="$script_dir/../skills/router/SKILL.zh.md"
     local skill_en_local="$script_dir/../skills/router/SKILL.en.md"
     local guide_zh_local="$script_dir/../skills/router/references/guide.zh.md"
     local guide_en_local="$script_dir/../skills/router/references/guide.en.md"
-    local skill_zh=""
-    local skill_en=""
-    local guide_zh=""
-    local guide_en=""
+    local skill_src_zh=""
+    local skill_src_en=""
+    local guide_src_zh=""
+    local guide_src_en=""
+    local tmp_skill_zh=""
+    local tmp_skill_en=""
+    local tmp_guide_zh=""
+    local tmp_guide_en=""
     local skill_dest_dir="$ROUTER_SKILL_DIR"
     local skill_dest="$skill_dest_dir/SKILL.md"
     local references_dest_dir="$skill_dest_dir/references"
 
-    skill_zh="$(resolve_repo_file "$skill_zh_local" "skills/router/SKILL.zh.md" 1)"
-    skill_en="$(resolve_repo_file "$skill_en_local" "skills/router/SKILL.en.md" 1)"
-    guide_zh="$(resolve_repo_file "$guide_zh_local" "skills/router/references/guide.zh.md" 0 || true)"
-    guide_en="$(resolve_repo_file "$guide_en_local" "skills/router/references/guide.en.md" 0 || true)"
+    if clawrouter_use_local_cache && [ -f "$skill_zh_local" ]; then
+        skill_src_zh="$skill_zh_local"
+    else
+        tmp_skill_zh="$(mktemp)"
+        if ! download_remote_file "skills/router/SKILL.zh.md" "$tmp_skill_zh"; then
+            rm -f "$tmp_skill_zh"
+            exit 1
+        fi
+        skill_src_zh="$tmp_skill_zh"
+    fi
+
+    if clawrouter_use_local_cache && [ -f "$skill_en_local" ]; then
+        skill_src_en="$skill_en_local"
+    else
+        tmp_skill_en="$(mktemp)"
+        if ! download_remote_file "skills/router/SKILL.en.md" "$tmp_skill_en"; then
+            rm -f "$tmp_skill_zh" "$tmp_skill_en"
+            exit 1
+        fi
+        skill_src_en="$tmp_skill_en"
+    fi
+
+    if clawrouter_use_local_cache && [ -f "$guide_zh_local" ]; then
+        guide_src_zh="$guide_zh_local"
+    else
+        tmp_guide_zh="$(mktemp)"
+        if download_remote_file "skills/router/references/guide.zh.md" "$tmp_guide_zh"; then
+            guide_src_zh="$tmp_guide_zh"
+        else
+            rm -f "$tmp_guide_zh"
+            tmp_guide_zh=""
+        fi
+    fi
+
+    if clawrouter_use_local_cache && [ -f "$guide_en_local" ]; then
+        guide_src_en="$guide_en_local"
+    else
+        tmp_guide_en="$(mktemp)"
+        if download_remote_file "skills/router/references/guide.en.md" "$tmp_guide_en"; then
+            guide_src_en="$tmp_guide_en"
+        else
+            rm -f "$tmp_guide_en"
+            tmp_guide_en=""
+        fi
+    fi
 
     # 创建目标目录
     mkdir -p "$skill_dest_dir"
@@ -972,27 +1005,29 @@ deploy_skill() {
 
     # 根据语言选择部署
     if [ "$SKILL_LANG" = "zh" ]; then
-        cp "$skill_zh" "$skill_dest"
+        cp "$skill_src_zh" "$skill_dest"
         rm -f "$skill_dest_dir/SKILL.en.md" "$skill_dest_dir/SKILL.zh.md" 2>/dev/null || true
         echo -e "${GREEN}✓ Deployed Chinese version of Router Skill${NC}"
     else
-        cp "$skill_en" "$skill_dest"
+        cp "$skill_src_en" "$skill_dest"
         rm -f "$skill_dest_dir/SKILL.zh.md" "$skill_dest_dir/SKILL.en.md" 2>/dev/null || true
         echo -e "${GREEN}✓ Deployed English version of Router Skill${NC}"
     fi
 
     # 同步 guide 文档，不覆盖运行时生成的 repo_mappings.json
     if [ "$SKILL_LANG" = "zh" ]; then
-        if [ -n "$guide_zh" ] && [ -f "$guide_zh" ]; then
-            cp "$guide_zh" "$references_dest_dir/guide.zh.md"
+        if [ -n "$guide_src_zh" ] && [ -f "$guide_src_zh" ]; then
+            cp "$guide_src_zh" "$references_dest_dir/guide.zh.md"
         fi
         rm -f "$references_dest_dir/guide.en.md"
     else
-        if [ -n "$guide_en" ] && [ -f "$guide_en" ]; then
-            cp "$guide_en" "$references_dest_dir/guide.en.md"
+        if [ -n "$guide_src_en" ] && [ -f "$guide_src_en" ]; then
+            cp "$guide_src_en" "$references_dest_dir/guide.en.md"
         fi
         rm -f "$references_dest_dir/guide.zh.md"
     fi
+
+    rm -f "$tmp_skill_zh" "$tmp_skill_en" "$tmp_guide_zh" "$tmp_guide_en"
 
     echo ""
 }
