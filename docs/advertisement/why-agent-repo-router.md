@@ -9,7 +9,7 @@
 
 这正是 AgentRepoRouter 的切入点。
 
-![AgentRepoRouter 宣传图](ads.png)
+![AgentRepoRouter 宣传图](../../images/cover/cover-03-architecture-board.png)
 
 ## AgentRepoRouter 不是另一个大而全平台
 
