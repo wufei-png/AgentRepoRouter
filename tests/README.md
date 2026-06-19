@@ -1,4 +1,4 @@
-# OrchAI Tests
+# AgentRepoRouter Tests
 
 ## Scope
 
@@ -12,7 +12,7 @@
 - 测试仓库中的自定义 agent / skill 资产
 - `repo_mappings.json` schema/version 校验
 
-测试不再依赖已删除的 `orchai.*` Python 运行时，也不再要求 `acpx` 会话。
+测试不再依赖已删除的旧 Python 运行时，也不再要求 `acpx` 会话。
 
 ## Run
 
@@ -35,11 +35,11 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 uv run --with pytest pytest -q
 所需环境变量：
 
 ```bash
-export ORCHAI_REAL_E2E=1
-export ORCHAI_REAL_E2E_AGENT=<test-agent-id>
-export ORCHAI_REAL_E2E_AGENT_WORKSPACE=<test-agent-workspace-abs-path>
-export ORCHAI_REAL_E2E_JUDGE_AGENT=<judge-agent-id>   # 可选，默认回退到 test agent
-export ORCHAI_REAL_E2E_LANGUAGE=en                    # 可选，默认 en
+export AGENT_REPO_ROUTER_REAL_E2E=1
+export AGENT_REPO_ROUTER_REAL_E2E_AGENT=<test-agent-id>
+export AGENT_REPO_ROUTER_REAL_E2E_AGENT_WORKSPACE=<test-agent-workspace-abs-path>
+export AGENT_REPO_ROUTER_REAL_E2E_JUDGE_AGENT=<judge-agent-id>   # 可选，默认回退到 test agent
+export AGENT_REPO_ROUTER_REAL_E2E_LANGUAGE=en                    # 可选，默认 en
 ```
 
 运行：

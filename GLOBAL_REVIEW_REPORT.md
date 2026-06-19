@@ -1,4 +1,4 @@
-# OrchAI 全局代码审查报告
+# AgentRepoRouter 全局代码审查报告
 
 **审查日期**: 2026-03-16  
 **审查范围**: 完整代码库 + 历史 review/fix 结果  
@@ -114,9 +114,9 @@
 
 | 计划模块 | 实现状态 | 文件 |
 |----------|----------|------|
-| Phase 1: 初始化系统 | ✅ 完成 | `orchai/init.py` |
-| Phase 2: Router Skill | ✅ 完成 | `orchai/router.py`, `skills/router/` |
-| Phase 3: ACP 适配层 | ✅ 完成 | `orchai/acp_adapter.py` |
+| Phase 1: 初始化系统 | ✅ 完成 | `legacy-python-runtime/init.py` |
+| Phase 2: Router Skill | ✅ 完成 | `legacy-python-runtime/router.py`, `skills/agent-repo-router/` |
+| Phase 3: ACP 适配层 | ✅ 完成 | `legacy-python-runtime/acp_adapter.py` |
 | Phase 4: 测试 Repo | ✅ 完成 | `tests/repos/test-backend/`, `tests/repos/test-docs/` |
 | Phase 5: 端到端测试 | ⚠️ 部分 | `tests/e2e/`, `tests/integration/` |
 | Phase 6: 自我进化 | ⚠️ 部分 | `add_mapping()` 已实现 |
@@ -125,21 +125,21 @@
 
 #### ✅ Phase 1 - 初始化系统
 
-- [x] `orchai init` 命令 - `orchai/cli.py`
+- [x] `legacy init` 命令 - `legacy-python-runtime/cli.py`
 - [x] 用户选择 (新建 agent / 现有 agent)
 - [x] 配置文件生成 (openclaw.yaml, agents.yaml, projects.yaml, mcp.yaml)
 - [x] Agent 定义文件生成
 
 #### ✅ Phase 2 - Router Skill
 
-- [x] `skills/router/skill.md` - Skill 定义
-- [x] `skills/router/router.py` - 独立 Skill 实现
-- [x] `skills/router/repo_mappings.json` - Repo 映射配置
+- [x] `skills/agent-repo-router/skill.md` - Skill 定义
+- [x] `skills/agent-repo-router/router.py` - 独立 Skill 实现
+- [x] `skills/agent-repo-router/repo_mappings.json` - Repo 映射配置
 - [x] 路由逻辑 (任务分类, Repo 匹配, Agent 选择)
 
 #### ✅ Phase 3 - ACP 适配层
 
-- [x] `orchai/acp_adapter.py` - ACP 协议调用
+- [x] `legacy-python-runtime/acp_adapter.py` - ACP 协议调用
 - [x] 支持三种 CLI (Claude Code, OpenCode, Codex)
 - [x] Fallback 逻辑实现
 
@@ -199,7 +199,7 @@ if not events and status == "completed":  # events 可能未定义!
 
 | 验收标准 | 状态 |
 |----------|------|
-| `orchai init` 可正常初始化配置 | ✅ |
+| `legacy init` 可正常初始化配置 | ✅ |
 | Router 能正确识别 5 种任务类型 | ✅ (feature, bugfix, refactor, docs, qa) |
 | 支持 3 种 CLI | ✅ |
 | Fallback 逻辑正常工作 | ✅ |
@@ -229,7 +229,7 @@ if not events and status == "completed":  # events 可能未定义!
 
 #### Bug 1: validator.py 变量未绑定错误
 
-**文件**: `orchai/validator.py`  
+**文件**: `legacy-python-runtime/validator.py`  
 **位置**: 第 116-144 行
 
 ```python

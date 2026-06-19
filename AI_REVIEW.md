@@ -1,4 +1,4 @@
-# OrchAI 架构评审记录
+# AgentRepoRouter 架构评审记录
 
 > 日期: 2026-03-17
 > 方式: AI Agent 辩论 (正方 vs 反方)

@@ -1,10 +1,10 @@
 # 产品规划
 
-> 本文档描述的是 **未来规划**，不是当前已经实现的功能清单。当前落地实现请以 `scripts/install.sh`、`skills/router/SKILL.*.md` 和测试覆盖为准。
+> 本文档描述的是 **未来规划**，不是当前已经实现的功能清单。当前落地实现请以 `scripts/install.sh`、`skills/agent-repo-router/SKILL.*.md` 和测试覆盖为准。
 
 ## 方向
 
-OrchAI 的长期目标，是在当前 OpenClaw Router Skill 的基础上，逐步演进成一个多项目、多 agent 的本地编程助理编排层。
+AgentRepoRouter 的长期目标，是在当前 OpenClaw Router Skill 的基础上，逐步演进成一个多项目、多 agent 的本地编程助理编排层。
 
 ## 当前基线
 

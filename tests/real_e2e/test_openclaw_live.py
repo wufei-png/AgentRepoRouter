@@ -24,34 +24,24 @@ from testsupport import (
 pytestmark = pytest.mark.real_e2e
 
 
-def env_value(primary_name: str, legacy_name: str) -> str | None:
-    return os.environ.get(primary_name) or os.environ.get(legacy_name)
-
-
 @pytest.fixture(scope="module")
 def real_e2e_config():
-    if env_value("CLAWROUTER_REAL_E2E", "ORCHAI_REAL_E2E") != "1":
-        pytest.skip("Set CLAWROUTER_REAL_E2E=1 to run live OpenClaw tests.")
+    if os.environ.get("AGENT_REPO_ROUTER_REAL_E2E") != "1":
+        pytest.skip("Set AGENT_REPO_ROUTER_REAL_E2E=1 to run live OpenClaw tests.")
 
-    agent_id = env_value("CLAWROUTER_REAL_E2E_AGENT", "ORCHAI_REAL_E2E_AGENT")
-    agent_workspace = env_value(
-        "CLAWROUTER_REAL_E2E_AGENT_WORKSPACE",
-        "ORCHAI_REAL_E2E_AGENT_WORKSPACE",
-    )
+    agent_id = os.environ.get("AGENT_REPO_ROUTER_REAL_E2E_AGENT")
+    agent_workspace = os.environ.get("AGENT_REPO_ROUTER_REAL_E2E_AGENT_WORKSPACE")
     if not agent_id or not agent_workspace:
         pytest.skip(
-            "CLAWROUTER_REAL_E2E_AGENT and CLAWROUTER_REAL_E2E_AGENT_WORKSPACE are required for live tests."
+            "AGENT_REPO_ROUTER_REAL_E2E_AGENT and AGENT_REPO_ROUTER_REAL_E2E_AGENT_WORKSPACE are required for live tests."
         )
 
     config = {
         "agent_id": agent_id,
         "agent_workspace": Path(agent_workspace).expanduser(),
-        "judge_agent": env_value("CLAWROUTER_REAL_E2E_JUDGE_AGENT", "ORCHAI_REAL_E2E_JUDGE_AGENT")
-        or agent_id,
-        "language": env_value("CLAWROUTER_REAL_E2E_LANGUAGE", "ORCHAI_REAL_E2E_LANGUAGE")
-        or "en",
-        "thinking": env_value("CLAWROUTER_REAL_E2E_THINKING", "ORCHAI_REAL_E2E_THINKING")
-        or "medium",
+        "judge_agent": os.environ.get("AGENT_REPO_ROUTER_REAL_E2E_JUDGE_AGENT") or agent_id,
+        "language": os.environ.get("AGENT_REPO_ROUTER_REAL_E2E_LANGUAGE") or "en",
+        "thinking": os.environ.get("AGENT_REPO_ROUTER_REAL_E2E_THINKING") or "medium",
     }
 
     ensure_openclaw_healthy()
@@ -65,7 +55,7 @@ def _run_judge(real_e2e_config: dict, prompt: str) -> dict:
         thinking="low",
         timeout=300,
     )
-    return extract_tagged_json(collect_agent_output_text(payload), "CLAWROUTER_JUDGE")
+    return extract_tagged_json(collect_agent_output_text(payload), "AGENT_REPO_ROUTER_JUDGE")
 
 
 def test_docs_question_is_answered_correctly_live(tmp_path, real_e2e_config):
@@ -97,7 +87,7 @@ def test_docs_question_is_answered_correctly_live(tmp_path, real_e2e_config):
         },
     ]
     task = "what is the deployment process in test-docs?"
-    message = f"use skill router to solve the following task: {task}"
+    message = f"use skill agent-repo-router to solve the following task: {task}"
 
     with temporary_router_skill_override(
         real_e2e_config["agent_workspace"],
@@ -162,7 +152,7 @@ def test_backend_bugfix_completes_successfully_live(tmp_path, real_e2e_config):
         "fix the login bug in test-backend so invalid passwords are rejected, "
         "use the project's build_and_test skill, and make sure npm test passes"
     )
-    message = f"use skill router to solve the following task: {task}"
+    message = f"use skill agent-repo-router to solve the following task: {task}"
 
     with temporary_router_skill_override(
         real_e2e_config["agent_workspace"],

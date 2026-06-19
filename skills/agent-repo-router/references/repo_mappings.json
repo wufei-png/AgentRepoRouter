@@ -1,6 +1,8 @@
 {
-  "schemaVersion": 1,
-  "agents": ["claude-code", "opencode", "cursor", "codex"],
+  "schemaVersion": 2,
+  "installMode": "global",
+  "installHosts": ["global", "openclaw", "claude-code", "opencode", "codex", "hermes"],
+  "executionClis": ["claude-code", "opencode", "cursor", "codex", "hermes"],
   "repos": [
     {
       "name": "example-backend",

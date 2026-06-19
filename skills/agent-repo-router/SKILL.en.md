@@ -1,11 +1,11 @@
 ---
-name: router
-description: "Route coding tasks to appropriate repos and agents. Use when user wants to work on a project or perform a coding task."
+name: agent-repo-router
+description: "Route coding tasks to the right repo and CLI."
 ---
 
-# Router Skill
+# AgentRepoRouter Skill
 
-Read `references/repo_mappings.json` for the repo list, repo aliases, detected project-level skills, detected project-level agents, and default agents order.
+Read `references/repo_mappings.json` for the repo list, repo aliases, detected project-level skills, detected project-level agents, install hosts, and default execution CLI order.
 
 See `references/guide.en.md` for detailed CLI conventions, path conventions, and longer examples.
 
@@ -23,7 +23,7 @@ See `references/guide.en.md` for detailed CLI conventions, path conventions, and
 3. Only if project-level assets do not match reliably, consider global Skills and Agents.
    - Global matches must be strict.
    - Do not inject a global Skill or Agent on weak or generic similarity.
-4. If neither project-level nor global matches are reliable, fall back to the default CLI order from `repo_mappings.json`.
+4. If neither project-level nor global matches are reliable, fall back to the default `executionClis` order from `repo_mappings.json`.
 
 ## Invocation Rules
 
@@ -49,18 +49,22 @@ use skill <skill-name> to solve the following task: <task description>
 | OpenCode                | `cd /path && opencode run "task"` |
 | Cursor                  | `cd /path && agent -p "task"` |
 | Codex                   | `cd /path && codex exec "task"` |
+| Hermes                  | `cd /path && hermes --oneshot "task"` |
 
 ## references/repo_mappings.json
 
-The configuration file defines only:
+The configuration file defines:
 
 - `repos`: the candidate projects for routing, plus optional aliases and detected skills and agents
-- `agents`: the default fallback order
+- `executionClis`: the default CLI fallback order
+- `installMode` and `installHosts`: where this skill was installed
 
 ```json
 {
-  "schemaVersion": 1,
-  "agents": ["claude-code", "opencode", "cursor", "codex"],
+  "schemaVersion": 2,
+  "installMode": "global",
+  "installHosts": ["global", "openclaw", "claude-code", "opencode", "codex", "hermes"],
+  "executionClis": ["claude-code", "opencode", "cursor", "codex", "hermes"],
   "repos": [
     {
       "name": "project-name",

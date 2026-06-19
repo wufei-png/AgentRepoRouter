@@ -3,7 +3,8 @@
 ## 架构分层
 
 ### 1. 交互控制层
-**OpenClaw**
+**Agent Host**
+- OpenClaw / Claude Code / OpenCode / Codex / Hermes
 - 统一入口和会话管理
 - Skill 加载和执行
 - Repo 路由
@@ -20,6 +21,7 @@
 - OpenCode
 - Cursor
 - Codex
+- Hermes
 
 ### 4. 工具层
 通过各 Agent 内置能力：
@@ -32,12 +34,14 @@
 
 ### install.sh
 安装脚本，负责初始化配置：
-1. 检查环境（Node.js, Git, OpenClaw）
+1. 检查环境（Node.js, Git）并检测可用 host
 2. 选择语言（中文/English）
-3. 选择 CLI 工具
-4. 发现项目（Auto scan / Manual）
-5. 生成 `~/.openclaw/skills/router/references/repo_mappings.json`
-6. 部署选中的 Router Skill 为 `~/.openclaw/skills/router/SKILL.md`
+3. 选择安装模式（Global / Single host / Custom hosts）
+4. 选择安装 host
+5. 选择执行 CLI 工具
+6. 发现项目（Auto scan / Manual）
+7. 生成 schema v2 `repo_mappings.json`
+8. 部署选中的 Router Skill
 
 ### Router Skill
 - 读取 `references/repo_mappings.json` 获取配置
@@ -47,12 +51,16 @@
 - 执行 CLI 命令
 
 ### repo_mappings.json
-运行时位置：`~/.openclaw/skills/router/references/repo_mappings.json`
+默认运行时位置：`~/.agents/skills/agent-repo-router/references/repo_mappings.json`
+
+多 host 安装时，各 host 的 skill 目录会软链接到 `~/.agents/skills/agent-repo-router`。单 host 安装时，配置直接写入该 host 的 skill 目录。
 
 ```json
 {
-  "schemaVersion": 1,
-  "agents": ["claude-code", "opencode", "cursor", "codex"],
+  "schemaVersion": 2,
+  "installMode": "global",
+  "installHosts": ["global", "openclaw", "claude-code", "opencode", "codex", "hermes"],
+  "executionClis": ["claude-code", "opencode", "cursor", "codex", "hermes"],
   "repos": [
     {
       "name": "my-backend",
@@ -107,8 +115,9 @@
 | OpenCode | `opencode run "task"` | `cd /path && opencode run "task"` |
 | Cursor | `agent -p "task"` | `cd /path && agent -p "task"` |
 | Codex | `codex exec "task"` | `cd /path && codex exec "task"` |
+| Hermes | `hermes --oneshot "task"` | `cd /path && hermes --oneshot "task"` |
 
-> Codex 官方 CLI 额外支持 `codex exec -C /path/to/repo "task"`；OrchAI 文档仍统一使用 `cd /path && ...` 表达运行时模式。
+> Codex 官方 CLI 额外支持 `codex exec -C /path/to/repo "task"`；AgentRepoRouter 文档仍统一使用 `cd /path && ...` 表达运行时模式。
 
 ## Agent 和 Skill 调用规范
 
@@ -119,6 +128,16 @@
 | Claude Code | `~/.claude/agents/` | `<repo>/.claude/agents/` | `--agent <name>` |
 | OpenCode | `~/.config/opencode/agents/` | `<repo>/.opencode/agents/` | 提示词 `use agent xxx` |
 | Cursor | `~/.cursor/agents/` | `<repo>/.cursor/agents/` | 提示词 `use agent xxx` |
+
+### AgentRepoRouter 安装路径
+
+| Host | 直接安装路径 |
+|------|-------------|
+| OpenClaw | `~/.openclaw/skills/agent-repo-router` |
+| Claude Code | `~/.claude/skills/agent-repo-router` |
+| OpenCode | `~/.config/opencode/skills/agent-repo-router` |
+| Codex | `~/.agents/skills/agent-repo-router` |
+| Hermes | `~/.hermes/skills/software-development/agent-repo-router` |
 
 ### Codex 自定义 Agent / Skill
 
@@ -150,11 +169,11 @@ use skill <skill-name> to solve the following task: <task>
 ## 目录结构
 
 ```
-OrchAI/
+AgentRepoRouter/
 ├── scripts/
 │   └── install.sh              # 安装脚本
 ├── skills/
-│   └── router/
+│   └── agent-repo-router/
 │       ├── SKILL.zh.md         # Router Skill (中文)
 │       ├── SKILL.en.md         # Router Skill (英文)
 │       └── references/

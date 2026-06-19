@@ -1,4 +1,4 @@
-# OrchAI 迁移决策
+# AgentRepoRouter 迁移决策
 
 ## 最终架构
 
@@ -36,11 +36,11 @@ install.sh → OpenClaw Skill (运行时)
 
 ```json
 {
-  "agents": ["claude-code", "opencode", "cursor", "codex"]
+  "executionClis": ["claude-code", "opencode", "cursor", "codex", "hermes"]
 }
 ```
 
-运行时按顺序尝试，可用则用，不可用则 fallback 到下一个。
+运行时按 executionClis 顺序尝试，可用则用，不可用则 fallback 到下一个。
 
 ### 3. 路由方式：LLM 判断
 
@@ -77,7 +77,7 @@ OpenClaw Skill (`router/SKILL.md`) 负责：
 3. 选择项目发现模式：
    - Auto scan: 输入根目录路径
    - Manual: 输入项目路径列表
-4. 生成 `~/.openclaw/skills/router/references/repo_mappings.json`
+4. 生成 `~/.openclaw/skills/agent-repo-router/references/repo_mappings.json`
 5. 部署 router/SKILL.md 到 ~/.openclaw/skills/
 ```
 
@@ -99,8 +99,10 @@ OpenClaw Skill (`router/SKILL.md`) 负责：
 
 ```json
 {
-  "schemaVersion": 1,
-  "agents": ["claude-code", "opencode", "cursor", "codex"],
+  "schemaVersion": 2,
+  "installMode": "global",
+  "installHosts": ["global", "openclaw", "claude-code", "opencode", "codex", "hermes"],
+  "executionClis": ["claude-code", "opencode", "cursor", "codex", "hermes"],
   "repos": [
     {
       "name": "my-backend",

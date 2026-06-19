@@ -13,7 +13,7 @@ from testsupport import (
 def test_auto_scan_preserves_repos_with_duplicate_names(tmp_path):
     home_dir = tmp_path / "home"
     scan_root = tmp_path / "scan-root"
-    fake_bin = make_fake_bin(tmp_path, {"node", "git", "openclaw", "claude", "opencode"})
+    fake_bin = make_fake_bin(tmp_path, {"node", "git", "claude", "opencode"})
 
     (scan_root / "team-a" / "shared" / ".git").mkdir(parents=True)
     (scan_root / "team-b" / "shared" / ".git").mkdir(parents=True)
@@ -36,7 +36,7 @@ def test_auto_scan_preserves_repos_with_duplicate_names(tmp_path):
     }
 
     assert result.returncode == 0, result.stdout + result.stderr
-    assert deployed_config["schemaVersion"] == 1
+    assert deployed_config["schemaVersion"] == 2
     assert repo_names.count("shared") == 2
     assert set(repo_names) == {"shared", "docs-site"}
     assert "Duplicate project name filtered: shared" not in result.stdout
@@ -48,9 +48,9 @@ def test_auto_scan_preserves_repos_with_duplicate_names(tmp_path):
 
 def test_manual_input_rejects_relative_paths_and_keeps_absolute_paths(tmp_path):
     home_dir = tmp_path / "home"
-    fake_bin = make_fake_bin(tmp_path, {"node", "git", "openclaw", "claude"})
+    fake_bin = make_fake_bin(tmp_path, {"node", "git", "claude"})
 
-    user_input = f"1\n1\n2\nrelative/path\n{PROJECT_ROOT}\n\n"
+    user_input = f"1\n1\n1\n2\nrelative/path\n{PROJECT_ROOT}\n\n"
     result = run_install(home_dir, user_input, with_fake_path(fake_bin))
 
     assert result.returncode == 0, result.stdout + result.stderr

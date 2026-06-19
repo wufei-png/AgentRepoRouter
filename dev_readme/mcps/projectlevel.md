@@ -1,4 +1,4 @@
-搜索查看文档，opencode project level mcp怎么设置'/home/wufei/github.com/wufei-png/OrchAI/.opencode/mcp.json' 看着格式不对，看是否支持，如果支持改为正确的
+搜索查看文档，opencode project level mcp怎么设置'/home/wufei/github.com/wufei-png/AgentRepoRouter/.opencode/mcp.json' 看着格式不对，看是否支持，如果支持改为正确的
 
 Based on my exhaustive research, here's the complete answer:
 ---
@@ -87,7 +87,7 @@ For your use case (some agents have MCPs, others don't), OpenCode is the best ch
 2. ✅ Hierarchical config merging (global → project → agent)
 3. ✅ Agent markdown files for easy management
 4. ✅ Already using it!
-Would you like me to set up the per-agent MCP configuration for your OrchAI project?
+Would you like me to set up the per-agent MCP configuration for your AgentRepoRouter project?
 ▣  Sisyphus (Ultraworker) · MiniMax-M2.5 · 26.8s
 <system-reminder>
 [ALL BACKGROUND TASKS COMPLETE]
@@ -103,4 +103,4 @@ Thinking: The user is seeing that all background tasks are complete. I already p
 Actually, I should wait for the user's response - they may want me to implement the per-agent MCP configuration, or they may have follow-up questions.
 All searches complete. I've already provided the full analysis above.
 TL;DR: OpenCode is your best option — it supports per-agent MCP through the tools filtering in agent config. Claude Code only supports project-level (not per-agent), and Codex CLI uses profiles.
-Want me to implement the per-agent MCP config for your OrchAI project?
+Want me to implement the per-agent MCP config for your AgentRepoRouter project?

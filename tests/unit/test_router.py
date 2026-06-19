@@ -1,4 +1,4 @@
-"""Unit tests for Router skill source assets."""
+"""Unit tests for AgentRepoRouter skill source assets."""
 
 import json
 import subprocess
@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-ROUTER_DIR = PROJECT_ROOT / "skills" / "router"
+ROUTER_DIR = PROJECT_ROOT / "skills" / "agent-repo-router"
 
 
 def test_skill_variants_use_references_repo_mappings():
@@ -23,7 +23,8 @@ def test_skill_variants_use_references_repo_mappings():
         assert "--cwd" not in content
         assert "use skill <skill-name> to solve the following task" in content
         assert "use agent" in content
-        assert "CLAWROUTER_REAL_E2E_TRACE" not in content
+        assert "AGENT_REPO_ROUTER_REAL_E2E_TRACE" not in content
+        assert "agent-repo-router" in content
 
 
 def test_router_reference_guides_exist():
@@ -34,10 +35,18 @@ def test_router_reference_guides_exist():
 def test_reference_repo_mappings_matches_current_schema():
     data = json.loads((ROUTER_DIR / "references" / "repo_mappings.json").read_text())
 
-    assert set(data.keys()) == {"schemaVersion", "agents", "repos"}
-    assert data["schemaVersion"] == 1
+    assert set(data.keys()) == {
+        "schemaVersion",
+        "installMode",
+        "installHosts",
+        "executionClis",
+        "repos",
+    }
+    assert data["schemaVersion"] == 2
     assert "language" not in data
-    assert data["agents"] == ["claude-code", "opencode", "cursor", "codex"]
+    assert data["installMode"] == "global"
+    assert data["installHosts"] == ["global", "openclaw", "claude-code", "opencode", "codex", "hermes"]
+    assert data["executionClis"] == ["claude-code", "opencode", "cursor", "codex", "hermes"]
     assert all(
         set(repo.keys()) == {"name", "path", "aliases", "skills", "agents"}
         for repo in data["repos"]

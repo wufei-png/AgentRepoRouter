@@ -24,4 +24,4 @@ def test_install_fails_when_no_supported_cli_is_available(tmp_path):
     result = run_install(home_dir, "1\n", with_fake_path(fake_bin))
 
     assert result.returncode != 0
-    assert "No supported CLI tools were found" in result.stdout
+    assert "No supported execution CLIs were found" in result.stdout

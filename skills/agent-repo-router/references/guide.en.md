@@ -1,6 +1,6 @@
-# Router Reference
+# AgentRepoRouter Reference
 
-This reference document holds the longer Router conventions. The runtime-facing rules stay in `../SKILL.en.md`.
+This reference document holds the longer AgentRepoRouter conventions. The runtime-facing rules stay in `../SKILL.en.md`.
 
 ## CLI Details
 
@@ -50,6 +50,12 @@ This reference document holds the longer Router conventions. The runtime-facing 
 - Additional skills can also be declared via `skills.config` paths in `config.toml`
 - The current official convention is not `.codex/skills/`
 
+### Hermes
+
+- Base command: `hermes --oneshot "task"`
+- Software-development skills: `~/.hermes/skills/software-development/`
+- AgentRepoRouter can also be installed under `~/.agents/skills/` and symlinked into Hermes.
+
 ## Routing Details
 
 ### Project-level first
@@ -71,7 +77,7 @@ This reference document holds the longer Router conventions. The runtime-facing 
 
 ### Fallback
 
-- If nothing matches reliably, fall back using the `agents` order in `repo_mappings.json`.
+- If nothing matches reliably, fall back using the `executionClis` order in `repo_mappings.json`.
 - During fallback, do not attach weakly matched skills by default.
 
 ## Common Task Categories

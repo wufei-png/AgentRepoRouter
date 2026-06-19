@@ -3,8 +3,11 @@
 from testsupport import (
     PROJECT_ROOT,
     deployed_config_path,
+    deployed_host_path,
+    deployed_host_skill_path,
     deployed_skill_path,
     load_deployed_config,
+    load_host_deployed_config,
     make_fake_bin,
     manual_install_input,
     run_install,
@@ -12,16 +15,16 @@ from testsupport import (
 )
 
 
-def test_manual_install_deploys_skill_and_config_into_router_directory(tmp_path):
+def test_default_global_install_creates_canonical_skill_and_host_symlinks(tmp_path):
     home_dir = tmp_path / "home"
     fake_bin = make_fake_bin(
         tmp_path,
-        {"node", "git", "openclaw", "claude", "opencode", "agent", "codex"},
+        {"node", "git", "openclaw", "claude", "opencode", "agent", "codex", "hermes"},
     )
 
     result = run_install(
         home_dir,
-        manual_install_input("1", "1,2", [str(PROJECT_ROOT)]),
+        manual_install_input("1", "1,2,4", [str(PROJECT_ROOT)], install_mode=""),
         with_fake_path(fake_bin),
     )
 
@@ -30,12 +33,18 @@ def test_manual_install_deploys_skill_and_config_into_router_directory(tmp_path)
     assert deployed_config_path(home_dir).exists()
     assert (deployed_skill_path(home_dir).parent / "references" / "guide.zh.md").exists()
     assert not (deployed_skill_path(home_dir).parent / "references" / "guide.en.md").exists()
-    assert not (home_dir / ".clawrouter" / "repo_mappings.json").exists()
+
+    for host in ["openclaw", "claude-code", "opencode", "hermes"]:
+        host_path = deployed_host_path(home_dir, host)
+        assert host_path.is_symlink()
+        assert host_path.resolve() == deployed_skill_path(home_dir).parent.resolve()
 
     deployed_config = load_deployed_config(home_dir)
     assert deployed_config == {
-        "schemaVersion": 1,
-        "agents": ["claude-code", "opencode"],
+        "schemaVersion": 2,
+        "installMode": "global",
+        "installHosts": ["global", "openclaw", "claude-code", "opencode", "codex", "hermes"],
+        "executionClis": ["claude-code", "opencode", "codex"],
         "repos": [
             {
                 "name": PROJECT_ROOT.name,
@@ -50,114 +59,97 @@ def test_manual_install_deploys_skill_and_config_into_router_directory(tmp_path)
     assert "读取 `references/repo_mappings.json`" in deployed_skill_path(home_dir).read_text()
 
 
-def test_manual_install_extracts_detected_project_assets(tmp_path):
+def test_single_host_install_writes_directly_without_global_source(tmp_path):
     home_dir = tmp_path / "home"
-    fake_bin = make_fake_bin(
-        tmp_path,
-        {"node", "git", "openclaw", "claude", "opencode"},
-    )
-    backend_repo = PROJECT_ROOT / "tests" / "repos" / "test-backend"
-    docs_repo = PROJECT_ROOT / "tests" / "repos" / "test-docs"
+    fake_bin = make_fake_bin(tmp_path, {"node", "git", "openclaw", "claude"})
 
     result = run_install(
         home_dir,
-        manual_install_input("1", "1,2", [str(backend_repo), str(docs_repo)]),
+        manual_install_input(
+            "2",
+            "1",
+            [str(PROJECT_ROOT)],
+            install_mode="2",
+            install_hosts="1",
+        ),
+        with_fake_path(fake_bin),
+    )
+
+    openclaw_skill = deployed_host_skill_path(home_dir, "openclaw")
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert openclaw_skill.exists()
+    assert not deployed_skill_path(home_dir).exists()
+    assert not deployed_host_path(home_dir, "openclaw").is_symlink()
+    assert "Route coding tasks to the right repo and CLI" in openclaw_skill.read_text()
+    assert load_host_deployed_config(home_dir, "openclaw")["installMode"] == "single"
+
+
+def test_custom_multi_host_install_uses_global_source_and_selected_symlinks(tmp_path):
+    home_dir = tmp_path / "home"
+    fake_bin = make_fake_bin(tmp_path, {"node", "git", "claude", "opencode"})
+
+    result = run_install(
+        home_dir,
+        manual_install_input(
+            "1",
+            "1,2",
+            [str(PROJECT_ROOT)],
+            install_mode="3",
+            install_hosts="2,3",
+        ),
         with_fake_path(fake_bin),
     )
 
     assert result.returncode == 0, result.stdout + result.stderr
-    assert load_deployed_config(home_dir)["repos"] == [
-        {
-            "name": "test-backend",
-            "path": str(backend_repo),
-            "aliases": [],
-            "skills": {
-                "claude-code": [
-                    {
-                        "name": "build_and_test",
-                        "description": (
-                            "Build and test skill. Use when task involves building, "
-                            "testing, or running CI/CD pipelines."
-                        ),
-                    }
-                ]
-            },
-            "agents": {
-                "claude-code": [
-                    {
-                        "name": "bugfix",
-                        "description": (
-                            "Bug fixing agent. Use when task contains: fix, bug, "
-                            "error, issue."
-                        ),
-                    }
-                ]
-            },
-        },
-        {
-            "name": "test-docs",
-            "path": str(docs_repo),
-            "aliases": [],
-            "skills": {
-                "opencode": [
-                    {
-                        "name": "doc_writer",
-                        "description": (
-                            "Documentation writing skill. Use when task involves "
-                            "writing or updating documentation."
-                        ),
-                    }
-                ]
-            },
-            "agents": {
-                "opencode": [
-                    {
-                        "name": "docs_writer",
-                        "description": "Documentation specialist for OpenCode",
-                    }
-                ]
-            },
-        },
-    ]
+    assert deployed_skill_path(home_dir).exists()
+    assert deployed_host_path(home_dir, "claude-code").is_symlink()
+    assert deployed_host_path(home_dir, "opencode").is_symlink()
+    assert not deployed_host_path(home_dir, "openclaw").exists()
+    assert load_deployed_config(home_dir)["installMode"] == "custom"
+    assert load_deployed_config(home_dir)["installHosts"] == ["claude-code", "opencode"]
 
 
-def test_existing_router_directory_can_be_deleted_and_overwritten(tmp_path):
+def test_custom_all_detected_toggles_every_detected_host(tmp_path):
     home_dir = tmp_path / "home"
-    router_dir = home_dir / ".openclaw" / "skills" / "router"
-    fake_bin = make_fake_bin(
-        tmp_path,
-        {"node", "git", "openclaw", "claude", "opencode", "agent", "codex"},
+    fake_bin = make_fake_bin(tmp_path, {"node", "git", "claude", "opencode", "codex"})
+
+    result = run_install(
+        home_dir,
+        manual_install_input(
+            "1",
+            "1,2,4",
+            [str(PROJECT_ROOT)],
+            install_mode="3",
+            install_hosts="0",
+        ),
+        with_fake_path(fake_bin),
     )
 
-    (router_dir / "references").mkdir(parents=True)
-    (router_dir / "old.txt").write_text("old-router")
-
-    user_input = manual_install_input("1", "1,2", [str(PROJECT_ROOT)]) + "1\n"
-    result = run_install(home_dir, user_input, with_fake_path(fake_bin))
-
     assert result.returncode == 0, result.stdout + result.stderr
-    assert not (router_dir / "old.txt").exists()
-    assert deployed_skill_path(home_dir).exists()
-    assert not (home_dir / ".openclaw" / "skills" / "router_backup_0").exists()
+    assert load_deployed_config(home_dir)["installHosts"] == ["claude-code", "opencode", "codex"]
+    assert deployed_host_path(home_dir, "claude-code").is_symlink()
+    assert deployed_host_path(home_dir, "opencode").is_symlink()
+    assert not deployed_host_path(home_dir, "openclaw").exists()
 
 
-def test_existing_router_directory_can_be_backed_up_with_incrementing_suffix(tmp_path):
+def test_existing_real_host_directory_can_be_backed_up_before_symlink(tmp_path):
     home_dir = tmp_path / "home"
-    skills_dir = home_dir / ".openclaw" / "skills"
-    router_dir = skills_dir / "router"
-    fake_bin = make_fake_bin(
-        tmp_path,
-        {"node", "git", "openclaw", "claude", "opencode", "agent", "codex"},
+    openclaw_dir = deployed_host_path(home_dir, "openclaw")
+    fake_bin = make_fake_bin(tmp_path, {"node", "git", "openclaw", "claude"})
+
+    openclaw_dir.mkdir(parents=True)
+    (openclaw_dir / "old.txt").write_text("old-router")
+
+    result = run_install(
+        home_dir,
+        manual_install_input("1", "1", [str(PROJECT_ROOT)], install_mode="1") + "2\n",
+        with_fake_path(fake_bin),
     )
 
-    (router_dir / "references").mkdir(parents=True)
-    (router_dir / "old.txt").write_text("old-router")
-    (skills_dir / "router_backup_0").mkdir(parents=True)
-
-    user_input = manual_install_input("1", "1,2", [str(PROJECT_ROOT)]) + "2\n"
-    result = run_install(home_dir, user_input, with_fake_path(fake_bin))
+    backup_dir = openclaw_dir.with_name("agent-repo-router_backup_0")
 
     assert result.returncode == 0, result.stdout + result.stderr
-    assert (skills_dir / "router_backup_1").exists()
-    assert (skills_dir / "router_backup_1" / "old.txt").read_text() == "old-router"
-    assert deployed_skill_path(home_dir).exists()
+    assert backup_dir.exists()
+    assert (backup_dir / "old.txt").read_text() == "old-router"
+    assert openclaw_dir.is_symlink()

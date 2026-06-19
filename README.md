@@ -1,12 +1,12 @@
-# ClawRouter
+# AgentRepoRouter
 
 [中文版](README_CN.md) | English
 
-Repo-aware routing for AI coding CLIs through an OpenClaw Router Skill.
+Repo-aware routing for AI coding CLIs as an installable skill for multiple agent hosts.
 
-ClawRouter turns OpenClaw into a unified entry point for Claude Code, OpenCode, Cursor, and Codex. It does not replace those CLIs. It routes tasks to the right repo, preserves each CLI's native agent and skill conventions, and uses structured repo metadata to improve navigation.
+AgentRepoRouter installs into OpenClaw, Claude Code, OpenCode, Codex, and Hermes skill locations. It does not replace those tools. It routes tasks to the right repo, preserves each CLI's native agent and skill conventions, and uses structured repo metadata to improve navigation.
 
-## Why ClawRouter Exists
+## Why AgentRepoRouter Exists
 
 Many developers now have more than one coding CLI, more than one repo, and more than one place where custom agents or skills live.
 
@@ -15,41 +15,41 @@ The real problem is often not "how do I run 20 agents in parallel?" It is:
 - Which repo should this task run in?
 - Which CLI is the best fit for this repo?
 - Does this repo already contain a project-level skill or agent I should use first?
-- How do I keep OpenClaw as the single entry point without flattening away each CLI's native conventions?
+- How do I keep one agent-host entry point without flattening away each CLI's native conventions?
 
-ClawRouter is built for that gap.
+AgentRepoRouter is built for that gap.
 
 ## Positioning
 
-The best way to understand ClawRouter is:
+The best way to understand AgentRepoRouter is:
 
-- OpenClaw is the control plane and conversation entry point.
-- ClawRouter is the routing layer for coding work.
-- Claude Code, OpenCode, Cursor, and Codex stay as the execution backends.
+- OpenClaw, Claude Code, OpenCode, Codex, or Hermes can host the skill.
+- AgentRepoRouter is the routing layer for coding work.
+- Claude Code, OpenCode, Cursor, Codex, and Hermes stay as the execution backends.
 
-This means ClawRouter is intentionally lighter than a full orchestration runtime. It focuses on entry, routing, repo selection, and native CLI invocation rather than boards, worktrees, PR lifecycle automation, or parallel swarms.
+This means AgentRepoRouter is intentionally lighter than a full orchestration runtime. It focuses on entry, routing, repo selection, and native CLI invocation rather than boards, worktrees, PR lifecycle automation, or parallel swarms.
 
 ## Research Conclusion
 
 This round of repo research led to three practical conclusions:
 
-- ClawRouter's value is not "beating" heavy orchestrators. Its value is being the thin but useful layer that makes OpenClaw repo-aware and CLI-aware for real coding tasks.
+- AgentRepoRouter's value is not "beating" heavy orchestrators. Its value is being the thin but useful layer that makes agent hosts repo-aware and CLI-aware for real coding tasks.
 - The most important differentiator is preserving native CLI ecosystems instead of inventing a new abstraction that hides them.
-- With `aliases`, detected project `skills`, and detected project `agents` now embedded in `repo_mappings.json`, ClawRouter is no longer just a thin prompt wrapper. It becomes structured routing context that OpenClaw can navigate reliably.
+- With `aliases`, detected project `skills`, and detected project `agents` now embedded in `repo_mappings.json`, AgentRepoRouter is no longer just a thin prompt wrapper. It becomes structured routing context that supported hosts can navigate reliably.
 
 ## Quick Start
 
 ```bash
 # Install from GitHub
-curl -fsSL https://raw.githubusercontent.com/wufei-png/ClawRouter/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/wufei-png/AgentRepoRouter/main/scripts/install.sh | bash
 
 # Or local install
 bash scripts/install.sh
 
 # Review repo aliases and detected project assets
-vim ~/.openclaw/skills/router/references/repo_mappings.json
+vim ~/.agents/skills/agent-repo-router/references/repo_mappings.json
 
-# Start OpenClaw
+# Start your host, for example OpenClaw
 openclaw
 ```
 
@@ -57,7 +57,7 @@ openclaw
 
 ```text
 User
-  -> OpenClaw
+  -> OpenClaw / Claude Code / OpenCode / Codex / Hermes
   -> Router Skill
   -> repo match via repo name / alias / task intent
   -> project-level skill / agent hints from repo_mappings.json
@@ -66,19 +66,21 @@ User
 
 ## What Exists Today
 
-- `scripts/install.sh` checks Node.js 18+, Git, and OpenClaw.
-- The installer lets you choose language and supported CLIs.
+- `scripts/install.sh` checks Node.js 18+ and Git, then detects supported agent hosts.
+- The installer lets you choose language, install mode, install hosts, and execution CLIs separately.
+- Default install mode is global: write once to `~/.agents/skills/agent-repo-router` and symlink detected hosts.
+- Single-host mode installs directly into the selected host skill directory.
+- Custom-host mode writes the canonical global copy and symlinks selected hosts.
 - Project discovery supports auto scan and manual absolute paths.
 - The generated repo config includes `aliases`, detected project-level `skills`, and detected project-level `agents`.
-- The installer writes `~/.openclaw/skills/router/references/repo_mappings.json`.
-- The selected router variant is deployed as `~/.openclaw/skills/router/SKILL.md`.
+- The installer writes schema v2 `repo_mappings.json` with `installMode`, `installHosts`, and `executionClis`.
 - The repo includes unit, integration, and E2E tests plus opt-in live OpenClaw E2E coverage.
 
 ## Design Principles
 
-### 1. OpenClaw-Native
+### 1. Host-Native Installation
 
-ClawRouter is delivered as an OpenClaw skill, not as another daemon or control plane.
+AgentRepoRouter is delivered as a skill, not as another daemon or control plane. It can be installed directly for one host or installed once globally and linked into multiple host skill directories.
 
 ### 2. Repo Metadata Is First-Class
 
@@ -86,8 +88,10 @@ Routing quality depends on repo context. `repo_mappings.json` is therefore not j
 
 ```json
 {
-  "schemaVersion": 1,
-  "agents": ["claude-code", "opencode", "cursor", "codex"],
+  "schemaVersion": 2,
+  "installMode": "global",
+  "installHosts": ["global", "openclaw", "claude-code", "opencode", "codex", "hermes"],
+  "executionClis": ["claude-code", "opencode", "cursor", "codex", "hermes"],
   "repos": [
     {
       "name": "example-backend",
@@ -116,12 +120,13 @@ Routing quality depends on repo context. `repo_mappings.json` is therefore not j
 
 ### 3. Preserve Native CLI Conventions
 
-Each CLI already has its own invocation model and project asset conventions. ClawRouter keeps those differences visible and uses them rather than hiding them.
+Each CLI already has its own invocation model and project asset conventions. AgentRepoRouter keeps those differences visible and uses them rather than hiding them.
 
 - Claude Code: `claude -p "task"` or `claude --agent <name> "task"`
 - OpenCode: `opencode run "task"` with prompt-based agent selection
 - Cursor: `agent -p "task"` with prompt-based agent selection
 - Codex: `codex exec "task"` with project-level `.agents/skills/`, `.codex/agents/`, and `AGENTS.md`
+- Hermes: `hermes --oneshot "task"` with Hermes skill conventions
 
 ### 4. Project-Level Assets Come Before Global Defaults
 
@@ -129,13 +134,13 @@ If a repo already has a project-level skill or agent, that should be treated as 
 
 ### 5. Explicit Fallback Beats Hidden Magic
 
-If nothing matches reliably, ClawRouter falls back using the `agents` order in `repo_mappings.json`. The behavior stays inspectable and predictable.
+If nothing matches reliably, AgentRepoRouter falls back using the `executionClis` order in `repo_mappings.json`. The behavior stays inspectable and predictable.
 
 ## Why The Current Schema Matters
 
 The newer `aliases` and detected `skills` and `agents` fields directly improve routing in ways the earlier minimal schema could not:
 
-- `aliases` lets OpenClaw match user language to repo nicknames such as `api`, `docs`, or `admin`.
+- `aliases` lets the host match user language to repo nicknames such as `api`, `docs`, or `admin`.
 - `skills` gives the router project-level capability hints before the CLI even starts.
 - `agents` gives the router project-level specialist hints without forcing weak global matches.
 - The `references/` folder keeps the runtime skill short while moving longer CLI conventions into explicit reference docs.
@@ -144,23 +149,23 @@ The newer `aliases` and detected `skills` and `agents` fields directly improve r
 
 The projects below are good comparison points, but they optimize for different layers of the stack.
 
-| Project | Primary role | Execution model | What it optimizes for | How it differs from ClawRouter |
+| Project | Primary role | Execution model | What it optimizes for | How it differs from AgentRepoRouter |
 | --- | --- | --- | --- | --- |
-| [ClawRouter](https://github.com/wufei-png/ClawRouter) | Repo-aware routing layer inside OpenClaw | One OpenClaw skill chooses repo, skill, agent, and CLI, then calls the native CLI directly | Unified entry and predictable routing across multiple coding CLIs | Focuses on routing and native convention preservation instead of full orchestration |
-| [OpenClaw](https://github.com/openclaw/openclaw) | Local-first personal assistant and control plane | Sessions, channels, skills, tools, and agents under one assistant runtime | Communication surfaces, sessions, skills, local-first assistant behavior | ClawRouter is a coding-focused skill on top of OpenClaw, not a replacement |
-| [MCO](https://github.com/mco-org/mco) | Parallel multi-CLI orchestration | Dispatch the same prompt to multiple coding CLIs and synthesize the results | Fan-out review, consensus, multi-model comparison | ClawRouter chooses one best-fit path first; MCO is better when you want parallel review or consensus |
-| [agtx](https://github.com/fynnfluegge/agtx) | Multi-agent task board and lifecycle manager | Kanban board, tmux sessions, worktrees, and orchestration agent | Persistent task flow across many agent sessions | ClawRouter is much lighter and does not own task boards or worktree lifecycles |
-| [Agent Orchestrator](https://github.com/ComposioHQ/agent-orchestrator) | Autonomous PR and CI workflow automation | Dashboard plus agents in isolated worktrees reacting to CI and review feedback | Ticket-to-PR automation at scale | ClawRouter stays as a routing layer and avoids taking over the whole delivery lifecycle |
-| [metaswarm](https://github.com/dsifry/metaswarm) | Opinionated SDLC orchestration framework | Multi-phase workflow, many personas, review gates, recursive orchestration | Strong process control and self-improving delivery loops | ClawRouter is less opinionated, simpler to adopt, and easier to layer onto an existing OpenClaw setup |
-| [burn-harness](https://github.com/bkmashiro/burn-harness) | Continuous developer task queue for coding agents | Background loop pulls tasks, executes work, creates draft PRs, retries failures | Non-stop task throughput | ClawRouter is interactive and routing-oriented rather than a background worker queue |
+| [AgentRepoRouter](https://github.com/wufei-png/AgentRepoRouter) | Repo-aware routing skill for multiple agent hosts | One skill chooses repo, skill, agent, and CLI, then calls the native CLI directly | Unified entry and predictable routing across multiple coding CLIs | Focuses on routing and native convention preservation instead of full orchestration |
+| [OpenClaw](https://github.com/openclaw/openclaw) | Local-first personal assistant and control plane | Sessions, channels, skills, tools, and agents under one assistant runtime | Communication surfaces, sessions, skills, local-first assistant behavior | AgentRepoRouter is a coding-focused skill on top of OpenClaw, not a replacement |
+| [MCO](https://github.com/mco-org/mco) | Parallel multi-CLI orchestration | Dispatch the same prompt to multiple coding CLIs and synthesize the results | Fan-out review, consensus, multi-model comparison | AgentRepoRouter chooses one best-fit path first; MCO is better when you want parallel review or consensus |
+| [agtx](https://github.com/fynnfluegge/agtx) | Multi-agent task board and lifecycle manager | Kanban board, tmux sessions, worktrees, and orchestration agent | Persistent task flow across many agent sessions | AgentRepoRouter is much lighter and does not own task boards or worktree lifecycles |
+| [Agent Orchestrator](https://github.com/ComposioHQ/agent-orchestrator) | Autonomous PR and CI workflow automation | Dashboard plus agents in isolated worktrees reacting to CI and review feedback | Ticket-to-PR automation at scale | AgentRepoRouter stays as a routing layer and avoids taking over the whole delivery lifecycle |
+| [metaswarm](https://github.com/dsifry/metaswarm) | Opinionated SDLC orchestration framework | Multi-phase workflow, many personas, review gates, recursive orchestration | Strong process control and self-improving delivery loops | AgentRepoRouter is less opinionated, simpler to adopt, and easier to layer onto an existing OpenClaw setup |
+| [burn-harness](https://github.com/bkmashiro/burn-harness) | Continuous developer task queue for coding agents | Background loop pulls tasks, executes work, creates draft PRs, retries failures | Non-stop task throughput | AgentRepoRouter is interactive and routing-oriented rather than a background worker queue |
 
 ## Highlights
 
-- OpenClaw-native deployment: install once, use from your existing OpenClaw workflow.
+- Multi-host deployment: install once globally and link detected hosts, or install directly for one host.
 - Repo-aware navigation: repo names, aliases, and task intent all contribute to routing.
 - Structured project hints: detected project-level skills and agents are stored in config instead of living only in prompt text.
 - Low lock-in: the execution step is still the original CLI, not a custom wrapper protocol.
-- Native conventions preserved: ClawRouter adapts to Claude Code, OpenCode, Cursor, and Codex instead of pretending they are identical.
+- Native conventions preserved: AgentRepoRouter adapts to Claude Code, OpenCode, Cursor, Codex, and Hermes instead of pretending they are identical.
 - Short runtime skill, longer references: the active `SKILL.md` stays readable while `references/` holds the detailed conventions.
 - Installer plus validation: repo config is generated and validated automatically.
 - Tested baseline: the repo includes unit, integration, E2E, and opt-in live tests.
@@ -173,8 +178,19 @@ The projects below are good comparison points, but they optimize for different l
 | OpenCode | `opencode run "task"` | `~/.config/opencode/agents/`, `<repo>/.opencode/agents/`, `<repo>/.opencode/skills/` |
 | Cursor | `agent -p "task"` | `~/.cursor/agents/`, `<repo>/.cursor/agents/` |
 | Codex | `codex exec "task"` | `~/.codex/config.toml`, `.codex/config.toml`, `~/.codex/agents/`, `.codex/agents/`, `.agents/skills/`, `AGENTS.md` |
+| Hermes | `hermes --oneshot "task"` | `~/.hermes/skills/software-development/`, host-specific Hermes config |
 
-Codex also officially supports `codex exec -C /path/to/repo "task"`. ClawRouter documentation still uses `cd /path && ...` examples so the routing pattern stays uniform across CLIs.
+## Install Targets
+
+| Host | Direct skill path |
+| --- | --- |
+| OpenClaw | `~/.openclaw/skills/agent-repo-router` |
+| Claude Code | `~/.claude/skills/agent-repo-router` |
+| OpenCode | `~/.config/opencode/skills/agent-repo-router` |
+| Codex | `~/.agents/skills/agent-repo-router` |
+| Hermes | `~/.hermes/skills/software-development/agent-repo-router` |
+
+Codex also officially supports `codex exec -C /path/to/repo "task"`. AgentRepoRouter documentation still uses `cd /path && ...` examples so the routing pattern stays uniform across CLIs.
 
 ## Example
 
@@ -189,16 +205,16 @@ Router:
 5. Execute directly in the target repo
 ```
 
-## When ClawRouter Is The Right Tool
+## When AgentRepoRouter Is The Right Tool
 
-Use ClawRouter when you want:
+Use AgentRepoRouter when you want:
 
-- OpenClaw as the single entry point
+- an existing agent host as the entry point
 - multiple repos and multiple coding CLIs
 - routing that respects project-level skills and agents
 - a lighter layer than full agent swarms or kanban orchestrators
 
-Pair ClawRouter with other tools when needed:
+Pair AgentRepoRouter with other tools when needed:
 
 - use MCO when you want the same task reviewed by multiple CLIs in parallel
 - use agtx or Agent Orchestrator when you want worktree-heavy lifecycle automation
@@ -209,6 +225,6 @@ Pair ClawRouter with other tools when needed:
 - [CLAUDE.md](CLAUDE.md) - Full project context
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - Current architecture and runtime conventions
 - [docs/PRODUCT.md](docs/PRODUCT.md) - Future roadmap, not current implementation
-- [docs/advertisement/why-clawrouter.md](docs/advertisement/why-clawrouter.md) - Recommendation article for potential users
+- [docs/advertisement/why-agent-repo-router.md](docs/advertisement/why-agent-repo-router.md) - Recommendation article for potential users
 - [docs/plans/migration/plan.md](docs/plans/migration/plan.md) - Migration history and implementation plan
 - [legacy/README.md](legacy/README.md) - Archived legacy materials

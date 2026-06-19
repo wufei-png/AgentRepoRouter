@@ -1,4 +1,4 @@
-# OrchAI 实现计划
+# AgentRepoRouter 实现计划
 
 ## 项目目标
 
@@ -9,7 +9,7 @@
 ### 1. Agent 架构
 - **主要逻辑在 Router Skill 中**
 - **提供 init 命令**：用户选择创建新 agent 或使用现有 agent
-  - 新 agent：专门的 `orchai-router` agent，提示词包含路由职责
+  - 新 agent：专门的 `agent-repo-router` agent，提示词包含路由职责
   - 现有 agent：复用 claude-code/opencode，添加 Router Skill
 
 ### 2. 自我进化机制
@@ -38,7 +38,7 @@
 **任务**:
 1. 创建 `orchai init` 命令
 2. 询问用户选择：
-   - [ ] 创建新的 `orchai-router` agent
+   - [ ] 创建新的 `agent-repo-router` agent
    - [ ] 使用现有 agent (claude-code/opencode/codex)
 3. 生成配置文件：
    - [ ] `config/openclaw.yaml` - OpenClaw 配置
@@ -46,7 +46,7 @@
    - [ ] `config/projects.yaml` - 项目列表
    - [ ] `config/mcp.yaml` - MCP 配置
 4. 如果选择新 agent：
-   - [ ] 生成 agent 定义文件 `config/agents/orchai-router.md`
+   - [ ] 生成 agent 定义文件 `config/agents/agent-repo-router.md`
    - [ ] 包含专门的路由提示词
    - [ ] 包含自我进化指令
 
@@ -58,7 +58,7 @@ config/
 ├── projects.yaml
 ├── mcp.yaml
 └── agents/
-    └── orchai-router.md  (可选)
+    └── agent-repo-router.md  (可选)
 ```
 
 ---
@@ -70,7 +70,7 @@ config/
 **任务**:
 1. 创建 Router Skill 目录结构
    ```
-   skills/router/
+   skills/agent-repo-router/
    ├── skill.md           # Skill 定义和提示词
    ├── router.py          # 路由逻辑实现
    └── repo_mappings.json # Repo 映射配置
@@ -298,7 +298,7 @@ user_input = "在 test-backend 添加日志功能"
 **任务**:
 1. Agent 提示词（如果创建新 agent）:
    ```markdown
-   # OrchAI Router Agent
+   # AgentRepoRouter Router Agent
 
    你是一个智能路由 agent，负责将用户任务分配给合适的项目和 agent。
 
@@ -310,7 +310,7 @@ user_input = "在 test-backend 添加日志功能"
    ## 自我进化流程
    当 Router Skill 返回 `found: false` 时：
    1. 列出候选项目让用户选择
-   2. 用户确认后，更新 `skills/router/repo_mappings.json`
+   2. 用户确认后，更新 `skills/agent-repo-router/repo_mappings.json`
    3. 添加新的关键字映射
    4. 继续执行任务
 
@@ -334,7 +334,7 @@ user_input = "在 test-backend 添加日志功能"
 ## 项目结构
 
 ```
-OrchAI/
+AgentRepoRouter/
 ├── src/
 │   ├── __init__.py
 │   ├── cli.py              # orchai 命令行入口
@@ -352,7 +352,7 @@ OrchAI/
 │   ├── projects.yaml
 │   ├── mcp.yaml
 │   └── agents/
-│       └── orchai-router.md
+│       └── agent-repo-router.md
 ├── tests/
 │   ├── unit/
 │   ├── integration/

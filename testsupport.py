@@ -1,4 +1,4 @@
-"""Shared test helpers for the Shell + OpenClaw migration."""
+"""Shared test helpers for AgentRepoRouter installer tests."""
 
 from __future__ import annotations
 
@@ -14,9 +14,20 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent
 INSTALL_SCRIPT = PROJECT_ROOT / "scripts" / "install.sh"
 VALIDATE_REPO_MAPPINGS_SCRIPT = PROJECT_ROOT / "scripts" / "validate_repo_mappings.sh"
-DEPLOYED_SKILL_REL = Path(".openclaw/skills/router/SKILL.md")
-DEPLOYED_CONFIG_REL = Path(".openclaw/skills/router/references/repo_mappings.json")
-REPO_MAPPINGS_SCHEMA_VERSION = 1
+SKILL_SLUG = "agent-repo-router"
+GLOBAL_SKILL_REL = Path(".agents/skills") / SKILL_SLUG
+DEPLOYED_SKILL_REL = GLOBAL_SKILL_REL / "SKILL.md"
+DEPLOYED_CONFIG_REL = GLOBAL_SKILL_REL / "references/repo_mappings.json"
+REPO_MAPPINGS_SCHEMA_VERSION = 2
+
+
+HOST_SKILL_RELS = {
+    "openclaw": Path(".openclaw/skills") / SKILL_SLUG,
+    "claude-code": Path(".claude/skills") / SKILL_SLUG,
+    "opencode": Path(".config/opencode/skills") / SKILL_SLUG,
+    "codex": GLOBAL_SKILL_REL,
+    "hermes": Path(".hermes/skills/software-development") / SKILL_SLUG,
+}
 
 
 def deployed_skill_path(home_dir: Path) -> Path:
@@ -27,8 +38,24 @@ def deployed_config_path(home_dir: Path) -> Path:
     return home_dir / DEPLOYED_CONFIG_REL
 
 
+def deployed_host_path(home_dir: Path, host: str) -> Path:
+    return home_dir / HOST_SKILL_RELS[host]
+
+
+def deployed_host_skill_path(home_dir: Path, host: str) -> Path:
+    return deployed_host_path(home_dir, host) / "SKILL.md"
+
+
+def deployed_host_config_path(home_dir: Path, host: str) -> Path:
+    return deployed_host_path(home_dir, host) / "references" / "repo_mappings.json"
+
+
 def load_deployed_config(home_dir: Path) -> dict:
     return json.loads(deployed_config_path(home_dir).read_text())
+
+
+def load_host_deployed_config(home_dir: Path, host: str) -> dict:
+    return json.loads(deployed_host_config_path(home_dir, host).read_text())
 
 
 def validate_repo_mappings_file(config_path: Path) -> None:
@@ -43,7 +70,14 @@ def validate_repo_mappings_file(config_path: Path) -> None:
         raise AssertionError(result.stderr or result.stdout or f"validation failed for {config_path}")
 
 
-def write_repo_mappings(config_path: Path, agents: list[str], repos: list[dict]) -> dict:
+def write_repo_mappings(
+    config_path: Path,
+    agents: list[str],
+    repos: list[dict],
+    *,
+    install_mode: str = "global",
+    install_hosts: list[str] | None = None,
+) -> dict:
     normalized_repos = []
     for repo in repos:
         normalized_repos.append(
@@ -58,7 +92,9 @@ def write_repo_mappings(config_path: Path, agents: list[str], repos: list[dict])
 
     payload = {
         "schemaVersion": REPO_MAPPINGS_SCHEMA_VERSION,
-        "agents": agents,
+        "installMode": install_mode,
+        "installHosts": install_hosts or ["global"],
+        "executionClis": agents,
         "repos": normalized_repos,
     }
     config_path.parent.mkdir(parents=True, exist_ok=True)
@@ -74,6 +110,7 @@ def run_install(
 ) -> subprocess.CompletedProcess[str]:
     env = os.environ.copy()
     env["HOME"] = str(home_dir)
+    env.setdefault("AGENT_REPO_ROUTER_USE_LOCAL_CACHE", "true")
     if extra_env:
         env.update(extra_env)
 
@@ -90,13 +127,34 @@ def run_install(
     )
 
 
-def manual_install_input(language: str, clis: str, paths: list[str]) -> str:
-    lines = [language, clis, "2", *paths, ""]
+def manual_install_input(
+    language: str,
+    clis: str,
+    paths: list[str],
+    *,
+    install_mode: str = "1",
+    install_hosts: str | None = None,
+) -> str:
+    lines = [language, install_mode]
+    if install_hosts is not None:
+        lines.append(install_hosts)
+    lines.extend([clis, "2", *paths, ""])
     return "\n".join(lines) + "\n"
 
 
-def auto_scan_input(language: str, clis: str, scan_root: str) -> str:
-    return f"{language}\n{clis}\n1\n{scan_root}\n"
+def auto_scan_input(
+    language: str,
+    clis: str,
+    scan_root: str,
+    *,
+    install_mode: str = "1",
+    install_hosts: str | None = None,
+) -> str:
+    lines = [language, install_mode]
+    if install_hosts is not None:
+        lines.append(install_hosts)
+    lines.extend([clis, "1", scan_root])
+    return "\n".join(lines) + "\n"
 
 
 def make_fake_bin(tmp_path: Path, available: set[str], node_version: str = "v24.13.0") -> Path:
@@ -120,6 +178,7 @@ exec "{real_node}" "$@"
         "opencode": "#!/bin/sh\nexit 0\n",
         "agent": "#!/bin/sh\nexit 0\n",
         "codex": "#!/bin/sh\nexit 0\n",
+        "hermes": "#!/bin/sh\nexit 0\n",
     }
 
     for name in available:
@@ -263,7 +322,7 @@ def initialize_git_repo(repo_path: Path) -> None:
     commands = [
         ["git", "init", "-q"],
         ["git", "config", "user.email", "real-e2e@example.com"],
-        ["git", "config", "user.name", "ClawRouter Real E2E"],
+        ["git", "config", "user.name", "AgentRepoRouter Real E2E"],
         ["git", "add", "-A"],
         ["git", "commit", "-q", "-m", "baseline"],
     ]
@@ -288,8 +347,8 @@ def temporary_router_skill_override(
     agents: list[str],
     repos: list[dict],
 ):
-    workspace_skill_dir = agent_workspace / "skills" / "router"
-    backup_dir = workspace_skill_dir.with_name("router.__clawrouter_backup__")
+    workspace_skill_dir = agent_workspace / "skills" / SKILL_SLUG
+    backup_dir = workspace_skill_dir.with_name(f"{SKILL_SLUG}.__agent_repo_router_backup__")
 
     if backup_dir.exists():
         shutil.rmtree(backup_dir)
@@ -299,8 +358,8 @@ def temporary_router_skill_override(
 
     try:
         template_name = "SKILL.zh.md" if language == "zh" else "SKILL.en.md"
-        template_path = PROJECT_ROOT / "skills" / "router" / template_name
-        references_dir = PROJECT_ROOT / "skills" / "router" / "references"
+        template_path = PROJECT_ROOT / "skills" / SKILL_SLUG / template_name
+        references_dir = PROJECT_ROOT / "skills" / SKILL_SLUG / "references"
 
         workspace_skill_dir.mkdir(parents=True, exist_ok=True)
         workspace_references_dir = workspace_skill_dir / "references"
@@ -326,9 +385,9 @@ def build_judge_prompt(
     repo_diff: str,
     repo_test_output: str,
 ) -> str:
-    return f"""You are the judge for a ClawRouter real e2e test.
+    return f"""You are the judge for an AgentRepoRouter real e2e test.
 Return exactly one line in the format:
-CLAWROUTER_JUDGE {{"pass":true|false,"reasons":["..."]}}
+AGENT_REPO_ROUTER_JUDGE {{"pass":true|false,"reasons":["..."]}}
 
 Task:
 {task}

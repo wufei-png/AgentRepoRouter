@@ -1,6 +1,6 @@
-# Router Reference
+# AgentRepoRouter Reference
 
-这份参考文档提供 Router Skill 的详细约定。运行时主规则在 `../SKILL.zh.md`。
+这份参考文档提供 AgentRepoRouter Skill 的详细约定。运行时主规则在 `../SKILL.zh.md`。
 
 ## CLI 细节
 
@@ -50,6 +50,12 @@
 - 额外 skill 也可以通过 `config.toml` 中的 `skills.config` 声明路径
 - 当前官方约定不是 `.codex/skills/`
 
+### Hermes
+
+- 基础命令：`hermes --oneshot "task"`
+- software-development skill：`~/.hermes/skills/software-development/`
+- AgentRepoRouter 可以安装到 `~/.agents/skills/`，再软链接到 Hermes。
+
 ## Router 判断细节
 
 ### 项目级优先
@@ -71,7 +77,7 @@
 
 ### Fallback
 
-- 都未命中时，按 `repo_mappings.json.agents` 的顺序选择默认 CLI。
+- 都未命中时，按 `repo_mappings.json.executionClis` 的顺序选择默认 CLI。
 - fallback 时默认不要附加弱命中的 skill。
 
 ## 常见任务类型

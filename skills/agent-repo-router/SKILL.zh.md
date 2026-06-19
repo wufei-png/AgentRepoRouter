@@ -1,11 +1,11 @@
 ---
-name: router
-description: "路由编码任务到合适的仓库和 Agent。当用户想要在某个项目上工作或执行编码任务时使用。"
+name: agent-repo-router
+description: "将编码任务路由到合适的仓库和 CLI。"
 ---
 
-# Router Skill
+# AgentRepoRouter Skill
 
-读取 `references/repo_mappings.json` 获取仓库列表、repo aliases、已检测的 project-level skills、project-level agents，以及默认 agents 顺序。
+读取 `references/repo_mappings.json` 获取仓库列表、repo aliases、已检测的 project-level skills、project-level agents、安装宿主，以及默认执行 CLI 顺序。
 
 详细 CLI 约定、路径约定和更多示例见 `references/guide.zh.md`。
 
@@ -22,7 +22,7 @@ description: "路由编码任务到合适的仓库和 Agent。当用户想要在
    - 具体路径和命令细节见 `references/guide.zh.md`。
 3. 项目级未命中时，再考虑全局 Skill 和 Agent。
    - 全局命中必须严格，不要因为弱相关或泛匹配就附加全局能力。
-4. 如果项目级和全局级都没有可靠命中，则按 `repo_mappings.json` 中的 `agents` 顺序 fallback 到默认 CLI。
+4. 如果项目级和全局级都没有可靠命中，则按 `repo_mappings.json` 中的 `executionClis` 顺序 fallback 到默认 CLI。
 
 ## 调用规则
 
@@ -48,18 +48,22 @@ use skill <skill-name> to solve the following task: <task description>
 | OpenCode                | `cd /path && opencode run "task"` |
 | Cursor                  | `cd /path && agent -p "task"` |
 | Codex                   | `cd /path && codex exec "task"` |
+| Hermes                  | `cd /path && hermes --oneshot "task"` |
 
 ## references/repo_mappings.json
 
-配置文件只定义两件事：
+配置文件定义：
 
 - `repos`: 可供路由选择的项目列表，以及可选 aliases、已检测 skills、已检测 agents
-- `agents`: 默认 fallback 顺序
+- `executionClis`: 默认 CLI fallback 顺序
+- `installMode` 和 `installHosts`: 当前 skill 的安装方式和宿主
 
 ```json
 {
-  "schemaVersion": 1,
-  "agents": ["claude-code", "opencode", "cursor", "codex"],
+  "schemaVersion": 2,
+  "installMode": "global",
+  "installHosts": ["global", "openclaw", "claude-code", "opencode", "codex", "hermes"],
+  "executionClis": ["claude-code", "opencode", "cursor", "codex", "hermes"],
   "repos": [
     {
       "name": "project-name",

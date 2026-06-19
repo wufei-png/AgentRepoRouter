@@ -1,4 +1,4 @@
-# OrchAI 迁移实现计划
+# AgentRepoRouter 迁移实现计划
 
 > 📅 2026-03-24
 > ⚠️ 待 Review - 此计划需用户确认后执行
@@ -7,7 +7,7 @@
 
 ## 概述
 
-将 OrchAI 从 Python 运行时框架迁移到**纯 Shell 初始化 + OpenClaw Skill 运行时**架构。
+将 AgentRepoRouter 从 Python 运行时框架迁移到**纯 Shell 初始化 + OpenClaw Skill 运行时**架构。
 
 ```
 install.sh → OpenClaw Skill (运行时)
@@ -21,7 +21,7 @@ install.sh → OpenClaw Skill (运行时)
 | 路由方式   | 关键词匹配 | LLM 判断           |
 | 初始化     | Python     | Shell 脚本         |
 | Skill 格式 | Python     | OpenClaw Skill     |
-| 项目配置   | orchai/    | repo_mappings.json |
+| 项目配置   | legacy-python-runtime/    | repo_mappings.json |
 
 ---
 
@@ -97,8 +97,10 @@ use skill <skill-name> to solve the following task: <task description>
 
 ```json
 {
-  "schemaVersion": 1,
-  "agents": ["claude-code", "opencode", "cursor", "codex"],
+  "schemaVersion": 2,
+  "installMode": "global",
+  "installHosts": ["global", "openclaw", "claude-code", "opencode", "codex", "hermes"],
+  "executionClis": ["claude-code", "opencode", "cursor", "codex", "hermes"],
   "repos": [
     {
       "name": "my-backend",
@@ -147,7 +149,7 @@ install.sh
 │   ├── [1] 中文
 │   └── [2] English
 │
-├── 3. 用户选择 CLI（交互式）
+├── 3. 用户选择执行 CLI（交互式）
 │   ├── [ ] claude-code  (检测: command -v claude)
 │   ├── [ ] opencode     (检测: command -v opencode)
 │   ├── [ ] cursor       (检测: command -v agent)
@@ -159,8 +161,8 @@ install.sh
 │   └── 选项 B: Manual
 │       └── 输入项目绝对路径
 │
-├── 5. 生成 ~/.openclaw/skills/router/references/repo_mappings.json
-│   └── 包含 agents 顺序和 repos 列表
+├── 5. 生成 ~/.openclaw/skills/agent-repo-router/references/repo_mappings.json
+│   └── 包含 installMode、installHosts、executionClis 顺序和 repos 列表
 │
 └── 6. 部署 Router Skill
     ├── 选择中文 → 复制 SKILL.zh.md 为 SKILL.md，删除 SKILL.en.md
@@ -171,8 +173,10 @@ install.sh
 
 ```json
 {
-  "schemaVersion": 1,
-  "agents": ["claude-code", "opencode", "cursor", "codex"],
+  "schemaVersion": 2,
+  "installMode": "global",
+  "installHosts": ["global", "openclaw", "claude-code", "opencode", "codex", "hermes"],
+  "executionClis": ["claude-code", "opencode", "cursor", "codex", "hermes"],
   "repos": [
     {
       "name": "my-backend",
@@ -236,7 +240,7 @@ OpenClaw Skill 负责运行时路由和执行。
 ### 文件位置
 
 ```
-skills/router/
+skills/agent-repo-router/
 ├── SKILL.zh.md        # 中文版
 ├── SKILL.en.md        # 英文版
 └── references/
@@ -310,7 +314,7 @@ use skill <skill-name> to solve the following task: <task description>
 
 ### 2. 选择 Agent
 
-按 repo_mappings.json 中的 agents 顺序，选择第一个可用的。
+按 repo_mappings.json 中的 executionClis 顺序，选择第一个可用的。
 
 ### 3. 执行命令
 
@@ -352,15 +356,15 @@ cd /path/to/repo && opencode run "use skill <skill-name> to solve: task descript
 
 ## references/repo_mappings.json
 
-配置文件，定义 agents 顺序和 repos 列表。
+配置文件，定义 executionClis 顺序和 repos 列表。
 
 ```
 
 ### 待完成
 
-- [ ] 创建 `skills/router/SKILL.zh.md`
-- [ ] 创建 `skills/router/SKILL.en.md`
-- [ ] 创建 `skills/router/references/` 目录
+- [ ] 创建 `skills/agent-repo-router/SKILL.zh.md`
+- [ ] 创建 `skills/agent-repo-router/SKILL.en.md`
+- [ ] 创建 `skills/agent-repo-router/references/` 目录
 - [ ] 维护 `references/repo_mappings.json` 作为唯一配置样板
 
 ---
@@ -452,16 +456,16 @@ git checkout main
 ### 删除
 
 ```
-orchai/router.py      # 路由逻辑（迁移到 Skill）
-orchai/acp_adapter.py # acpx 执行（改用直接 CLI）
-orchai/validator.py   # 验证器（Skill 内处理）
-orchai/config.py     # 配置加载（repo_mappings.json 替代）
-orchai/__init__.py    # 精简
-orchai/cli.py         # 删除
-orchai/init.py        # 删除
+legacy-python-runtime/router.py      # 路由逻辑（迁移到 Skill）
+legacy-python-runtime/acp_adapter.py # acpx 执行（改用直接 CLI）
+legacy-python-runtime/validator.py   # 验证器（Skill 内处理）
+legacy-python-runtime/config.py     # 配置加载（repo_mappings.json 替代）
+legacy-python-runtime/__init__.py    # 精简
+legacy-python-runtime/cli.py         # 删除
+legacy-python-runtime/init.py        # 删除
 demo.py               # 删除
 pyproject.toml        # 删除
-skills/router/router.py  # 依赖 orchai/，需删除
+skills/agent-repo-router/router.py  # 依赖 legacy-python-runtime/，需删除
 ```
 
 ### 保留
@@ -469,9 +473,9 @@ skills/router/router.py  # 依赖 orchai/，需删除
 ```
 tests/                    # 测试用例
 legacy/config/            # 配置示例（参考用）
-skills/router/SKILL.zh.md # Router Skill (中文模板)
-skills/router/SKILL.en.md # Router Skill (英文模板)
-skills/router/references/  # 配置文件
+skills/agent-repo-router/SKILL.zh.md # Router Skill (中文模板)
+skills/agent-repo-router/SKILL.en.md # Router Skill (英文模板)
+skills/agent-repo-router/references/  # 配置文件
 ```
 
 ### 待完成
@@ -479,7 +483,7 @@ skills/router/references/  # 配置文件
 - [ ] 备份到 `backup/python-legacy` 分支
 - [ ] 删除废弃 Python 代码
 - [ ] 删除 demo.py, pyproject.toml
-- [ ] 删除 skills/router/router.py
+- [ ] 删除 skills/agent-repo-router/router.py
 
 ---
 
@@ -551,8 +555,8 @@ skills/router/references/  # 配置文件
 ### 新增
 
 ```
-~/.openclaw/skills/router/SKILL.md                      # 路由 Skill
-~/.openclaw/skills/router/references/repo_mappings.json # 运行时配置
+~/.openclaw/skills/agent-repo-router/SKILL.md                      # 路由 Skill
+~/.openclaw/skills/agent-repo-router/references/repo_mappings.json # 运行时配置
 scripts/install.sh              # 主安装脚本
 tests/repos/test-backend/       # 测试仓库
 tests/repos/test-docs/          # 测试仓库
@@ -562,16 +566,16 @@ tests/repos/test-subagents/    # 测试仓库
 ### 删除
 
 ```
-orchai/router.py
-orchai/acp_adapter.py
-orchai/validator.py
-orchai/config.py
-orchai/cli.py
-orchai/init.py
-orchai/__init__.py
+legacy-python-runtime/router.py
+legacy-python-runtime/acp_adapter.py
+legacy-python-runtime/validator.py
+legacy-python-runtime/config.py
+legacy-python-runtime/cli.py
+legacy-python-runtime/init.py
+legacy-python-runtime/__init__.py
 demo.py
 pyproject.toml
-skills/router/router.py
+skills/agent-repo-router/router.py
 ```
 
 ### 移动
@@ -585,9 +589,9 @@ legacy/docs/plans/migration/OLD-plan.md  # 原 plan.md
 ```
 tests/
 legacy/config/
-skills/router/SKILL.zh.md
-skills/router/SKILL.en.md
-skills/router/references/
+skills/agent-repo-router/SKILL.zh.md
+skills/agent-repo-router/SKILL.en.md
+skills/agent-repo-router/references/
 ```
 
 ---
@@ -595,8 +599,8 @@ skills/router/references/
 ## 执行顺序
 
 1. ⬜ 重写 `install.sh`
-2. ⬜ 创建 `skills/router/SKILL.zh.md` 和 `skills/router/SKILL.en.md`
-3. ⬜ 创建 `skills/router/references/repo_mappings.json`
+2. ⬜ 创建 `skills/agent-repo-router/SKILL.zh.md` 和 `skills/agent-repo-router/SKILL.en.md`
+3. ⬜ 创建 `skills/agent-repo-router/references/repo_mappings.json`
 4. ⬜ 创建测试仓库 `tests/repos/`
 5. ⬜ 更新文档
 6. ⬜ 备份到 `backup/python-legacy` 分支
@@ -610,7 +614,7 @@ skills/router/references/
 - [ ] `install.sh` 交互式完成初始化
 - [ ] `repo_mappings.json` 正确生成到 `router/references/`
 - [ ] Router Skill 正确路由任务
-- [ ] Fallback 按 agents 顺序尝试
+- [ ] Fallback 按 executionClis 顺序尝试
 - [ ] 文档准确反映新架构
 - [ ] Python 代码完全不参与运行时
 - [ ] 所有 CLI 命令正确执行（统一用 `cd` 切换目录）

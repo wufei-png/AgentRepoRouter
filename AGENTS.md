@@ -1,36 +1,48 @@
-# ClawRouter - Repo-Aware Router for AI Coding CLIs
+# AgentRepoRouter - Repo-Aware Router for AI Coding CLIs
 
 ## 项目简介
 
-ClawRouter 是一个本地运行的 AI 编程助理路由层，通过 OpenClaw Skill 进行路由，在多个 coding CLI（Claude Code、OpenCode、Cursor、Codex）之间选择合适的 repo、skill、agent 和执行路径。
+AgentRepoRouter 是一个本地运行的 AI 编程助理路由 skill，可安装到 OpenClaw、Claude Code、OpenCode、Codex 与 Hermes。它根据任务选择合适的 repo、project skill、project agent 与执行 CLI，并保持各 CLI 的原生命令和目录约定。
 
 ## 核心能力
 
-- **统一入口**: OpenClaw 提供会话管理
-- **智能路由**: LLM 判断任务类型并路由
-- **直接 CLI**: 直接调用各 Agent CLI，无中间协议
-- **多语言支持**: Skill 支持中文/英文
+- **多 host 安装**: 支持全局安装并软链接到多个 host，也支持单 host 直接安装。
+- **智能路由**: LLM 根据 repo metadata、aliases、project skills、project agents 判断执行路径。
+- **直接 CLI**: 直接调用各 Agent CLI，无中间协议。
+- **多语言支持**: Skill 支持中文/英文。
 
 ## 技术栈
 
-- **控制层**: OpenClaw Skill (路由逻辑)
-- **Agent 层**: Claude Code / OpenCode / Cursor / Codex (直接 CLI)
+- **运行层**: Agent skill host（OpenClaw / Claude Code / OpenCode / Codex / Hermes）
+- **Agent 层**: Claude Code / OpenCode / Cursor / Codex / Hermes
 - **初始化**: Shell 脚本
 - **语言**: Shell + Markdown
 
-## 架构概览
+## 安装语义
 
-```
-用户 → OpenClaw
-  ↓
-Router Skill (LLM 判断路由)
-  ↓
-选择 Repo + Agent
-  ↓
-cd 到项目目录 → 直接 CLI 启动 Agent
-  ↓
-Agent 执行任务
-```
+默认流程使用 `Global (recommended)`：
+
+1. 写入规范全局目录：`~/.agents/skills/agent-repo-router`
+2. 将检测到的 host skill 目录软链接到该目录
+3. 生成 schema v2 `references/repo_mappings.json`
+
+安装模式：
+
+| 模式 | 行为 |
+|------|------|
+| Global | 写入 `~/.agents/skills/agent-repo-router`，并软链接所有检测到的 host |
+| Single host | 直接写入单个 host 的 skill 目录；Codex 目标本身就是全局目录 |
+| Custom hosts | 写入全局目录，并软链接选中的多个 host |
+
+直接安装路径：
+
+| Host | 路径 |
+|------|------|
+| OpenClaw | `~/.openclaw/skills/agent-repo-router` |
+| Claude Code | `~/.claude/skills/agent-repo-router` |
+| OpenCode | `~/.config/opencode/skills/agent-repo-router` |
+| Codex | `~/.agents/skills/agent-repo-router` |
+| Hermes | `~/.hermes/skills/software-development/agent-repo-router` |
 
 ## 核心组件
 
@@ -39,52 +51,49 @@ Agent 执行任务
 安装脚本，负责初始化配置：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/wufei-png/ClawRouter/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/wufei-png/AgentRepoRouter/main/scripts/install.sh | bash
 ```
 
 流程：
-1. 检查环境（Node.js, Git, OpenClaw）
-2. 选择语言（中文/English）
-3. 选择 CLI 工具
-4. 发现项目（Auto scan / Manual）
-5. 生成 `~/.openclaw/skills/router/references/repo_mappings.json`
-6. 部署选中的 Router Skill 为 `~/.openclaw/skills/router/SKILL.md`
 
-### skills/router/
+1. 检查环境（Node.js, Git）并检测可用 host
+2. 选择语言（中文/English）
+3. 选择安装模式（Global / Single host / Custom hosts）
+4. 选择安装 host
+5. 选择执行 CLI
+6. 发现项目（Auto scan / Manual）
+7. 部署 `skills/agent-repo-router/SKILL.<lang>.md`
+8. 写入 `references/repo_mappings.json`
+
+### skills/agent-repo-router/
 
 Router Skill 源文件：
 
-```
-skills/router/
-├── SKILL.zh.md        # 中文版
-├── SKILL.en.md        # 英文版
+```text
+skills/agent-repo-router/
+├── SKILL.zh.md
+├── SKILL.en.md
 └── references/
+    ├── guide.zh.md
+    ├── guide.en.md
     └── repo_mappings.json
 ```
 
-安装时选择语言，对应文件被部署为 `~/.openclaw/skills/router/SKILL.md`。
-
-### ~/.openclaw/skills/router/references/repo_mappings.json
-
-用户配置文件：
+### repo_mappings.json
 
 ```json
 {
-  "schemaVersion": 1,
-  "agents": ["claude-code", "opencode", "cursor", "codex"],
+  "schemaVersion": 2,
+  "installMode": "global",
+  "installHosts": ["global", "openclaw", "claude-code", "opencode", "codex", "hermes"],
+  "executionClis": ["claude-code", "opencode", "cursor", "codex", "hermes"],
   "repos": [
     {
       "name": "my-backend",
       "path": "/path/to/backend",
       "aliases": ["backend", "api"],
-      "skills": {
-        "claude-code": [
-          {
-            "name": "build_and_test",
-            "description": "Run build and tests before finishing changes."
-          }
-        ]
-      }
+      "skills": {},
+      "agents": {}
     }
   ]
 }
@@ -99,8 +108,9 @@ skills/router/
 | OpenCode | `opencode run "task"` | `cd /path && opencode run "task"` |
 | Cursor | `agent -p "task"` | `cd /path && agent -p "task"` |
 | Codex | `codex exec "task"` | `cd /path && codex exec "task"` |
+| Hermes | `hermes --oneshot "task"` | `cd /path && hermes --oneshot "task"` |
 
-> 注：Codex 官方 CLI 也支持 `codex exec -C /path/to/repo "task"`；这里仍统一写成 `cd /path && ...`，便于和其他 CLI 对齐。
+Codex 官方 CLI 也支持 `codex exec -C /path/to/repo "task"`；这里仍统一写成 `cd /path && ...`，便于和其他 CLI 对齐。
 
 ## Agent 和 Skill 调用规范
 
@@ -122,61 +132,11 @@ skills/router/
 - 项目级 skill：`<repo>/.agents/skills/`
 - 全局说明文件：`~/.codex/AGENTS.md`
 - 项目说明文件：`AGENTS.md`
-- 如果需要，也可以在 `config.toml` 里通过 `skills.config` 显式声明 skill 路径
-- 当前官方约定不是 `.codex/skills/`
 
 ### Skill 调用
 
-```
-use skill <skill-name> to solve the following task: <task>
-```
-
-### 省略规则
-
-| 情况 | 写法 |
-|------|------|
-| Agent/Skill 在 agent 文件夹内，且只命中一个 | 省略不提 |
-| 只命中一个 | `use skill` 或 `use agent` |
-| 两者都命中 | 两者都用 |
-| 冲突 | 提示用户选择 |
-
-## 项目结构
-
-```
-repo-root/
-├── scripts/
-│   └── install.sh              # 安装脚本
-├── skills/
-│   └── router/
-│       ├── SKILL.zh.md         # Router Skill (中文)
-│       ├── SKILL.en.md         # Router Skill (英文)
-│       └── references/
-│           └── repo_mappings.json
-├── tests/repos/               # 测试仓库
-│   ├── test-backend/           # Claude Code 项目
-│   ├── test-docs/              # OpenCode 项目
-│   └── test-subagents/         # 自定义 Agent 测试
-├── docs/
-│   ├── ARCHITECTURE.md
-│   ├── PRODUCT.md
-│   └── plans/migration/plan.md
-└── legacy/                     # 历史归档
-```
-
-## 快速开始
-
-```bash
-# 安装
-curl -fsSL https://raw.githubusercontent.com/wufei-png/ClawRouter/main/scripts/install.sh | bash
-
-# 或本地安装
-bash scripts/install.sh
-
-# 编辑配置
-vim ~/.openclaw/skills/router/references/repo_mappings.json
-
-# 启动 OpenClaw
-openclaw
+```text
+use skill agent-repo-router to solve the following task: <task>
 ```
 
 ## 文档导航

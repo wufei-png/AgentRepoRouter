@@ -40,30 +40,79 @@ if (!data || typeof data !== "object" || Array.isArray(data)) {
   fail("root must be a JSON object");
 }
 
-if (data.schemaVersion !== 1) {
-  fail("schemaVersion must be 1");
+const rootKeys = Object.keys(data).sort();
+const expectedRootKeys = [
+  "executionClis",
+  "installHosts",
+  "installMode",
+  "repos",
+  "schemaVersion",
+];
+if (
+  rootKeys.length !== expectedRootKeys.length ||
+  rootKeys.some((key, keyIndex) => key !== expectedRootKeys[keyIndex])
+) {
+  fail(`root must contain exactly these keys: ${expectedRootKeys.join(", ")}`);
 }
 
-if (!Array.isArray(data.agents)) {
-  fail("agents must be an array");
+if (data.schemaVersion !== 2) {
+  fail("schemaVersion must be 2");
 }
 
-const seenAgents = new Set();
-for (const [index, agent] of data.agents.entries()) {
-  if (typeof agent !== "string" || agent.trim() === "") {
-    fail(`agents[${index}] must be a non-empty string`);
+if (!["global", "single", "custom"].includes(data.installMode)) {
+  fail("installMode must be global, single, or custom");
+}
+
+const supportedInstallHosts = new Set([
+  "global",
+  "openclaw",
+  "claude-code",
+  "opencode",
+  "codex",
+  "hermes",
+]);
+
+if (!Array.isArray(data.installHosts)) {
+  fail("installHosts must be an array");
+}
+
+const seenInstallHosts = new Set();
+for (const [index, host] of data.installHosts.entries()) {
+  if (typeof host !== "string" || host.trim() === "") {
+    fail(`installHosts[${index}] must be a non-empty string`);
   }
-  if (seenAgents.has(agent)) {
-    fail(`agents contains a duplicate entry: ${agent}`);
+  if (!supportedInstallHosts.has(host)) {
+    fail(`installHosts[${index}] has an unsupported host: ${host}`);
   }
-  seenAgents.add(agent);
+  if (seenInstallHosts.has(host)) {
+    fail(`installHosts contains a duplicate entry: ${host}`);
+  }
+  seenInstallHosts.add(host);
+}
+
+if (!Array.isArray(data.executionClis)) {
+  fail("executionClis must be an array");
+}
+
+const supportedCliKeys = new Set(["claude-code", "opencode", "cursor", "codex", "hermes"]);
+
+const seenExecutionClis = new Set();
+for (const [index, cliName] of data.executionClis.entries()) {
+  if (typeof cliName !== "string" || cliName.trim() === "") {
+    fail(`executionClis[${index}] must be a non-empty string`);
+  }
+  if (!supportedCliKeys.has(cliName)) {
+    fail(`executionClis[${index}] has an unsupported CLI: ${cliName}`);
+  }
+  if (seenExecutionClis.has(cliName)) {
+    fail(`executionClis contains a duplicate entry: ${cliName}`);
+  }
+  seenExecutionClis.add(cliName);
 }
 
 if (!Array.isArray(data.repos)) {
   fail("repos must be an array");
 }
-
-const supportedCliKeys = new Set(["claude-code", "opencode", "cursor", "codex"]);
 
 function validateNamedAssetMap(kind, assetMap, repoIndex) {
   if (!assetMap || typeof assetMap !== "object" || Array.isArray(assetMap)) {
