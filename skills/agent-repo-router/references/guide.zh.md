@@ -48,7 +48,7 @@
 - 全局说明文件：`~/.codex/AGENTS.md`
 - 项目说明文件：`AGENTS.md`
 - 额外 skill 也可以通过 `config.toml` 中的 `skills.config` 声明路径
-- 当前官方约定不是 `.codex/skills/`
+- 当前 Codex 公开 manual 将用户级 skills 放在 `$HOME/.agents/skills`；本安装器不会创建 `~/.codex/skills` 条目。
 
 ### Hermes
 

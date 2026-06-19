@@ -190,6 +190,8 @@ The projects below are good comparison points, but they optimize for different l
 | Codex | `~/.agents/skills/agent-repo-router` |
 | Hermes | `~/.hermes/skills/software-development/agent-repo-router` |
 
+Codex's current public [Agent Skills manual](https://developers.openai.com/codex/skills.md) lists user skills under `$HOME/.agents/skills`; `~/.codex/skills` is not the user skill discovery path for this installer.
+
 Codex also officially supports `codex exec -C /path/to/repo "task"`. AgentRepoRouter documentation still uses `cd /path && ...` examples so the routing pattern stays uniform across CLIs.
 
 ## Example

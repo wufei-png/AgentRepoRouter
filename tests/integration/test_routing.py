@@ -85,6 +85,35 @@ def test_single_host_install_writes_directly_without_global_source(tmp_path):
     assert load_host_deployed_config(home_dir, "openclaw")["installMode"] == "single"
 
 
+def test_codex_single_host_uses_agents_skills_not_codex_skills(tmp_path):
+    home_dir = tmp_path / "home"
+    fake_bin = make_fake_bin(tmp_path, {"node", "git", "codex"})
+
+    result = run_install(
+        home_dir,
+        manual_install_input(
+            "1",
+            "4",
+            [str(PROJECT_ROOT)],
+            install_mode="2",
+            install_hosts="4",
+        ),
+        with_fake_path(fake_bin),
+    )
+
+    codex_skill = deployed_host_skill_path(home_dir, "codex")
+    legacy_codex_skill = home_dir / ".codex" / "skills" / "agent-repo-router"
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert codex_skill.exists()
+    assert not codex_skill.parent.is_symlink()
+    assert not legacy_codex_skill.exists()
+    assert "Codex loads skills from ~/.agents/skills" in result.stdout
+    assert "no ~/.codex/skills symlink is created" in result.stdout
+    assert load_host_deployed_config(home_dir, "codex")["installMode"] == "single"
+    assert load_host_deployed_config(home_dir, "codex")["installHosts"] == ["codex"]
+
+
 def test_custom_multi_host_install_uses_global_source_and_selected_symlinks(tmp_path):
     home_dir = tmp_path / "home"
     fake_bin = make_fake_bin(tmp_path, {"node", "git", "claude", "opencode"})

@@ -48,7 +48,7 @@ This reference document holds the longer AgentRepoRouter conventions. The runtim
 - Global instructions: `~/.codex/AGENTS.md`
 - Project instructions: `AGENTS.md`
 - Additional skills can also be declared via `skills.config` paths in `config.toml`
-- The current official convention is not `.codex/skills/`
+- The current public Codex manual lists user skills under `$HOME/.agents/skills`; this installer does not create `~/.codex/skills` entries.
 
 ### Hermes
 

@@ -362,6 +362,25 @@ get_host_dir() {
     esac
 }
 
+display_path() {
+    local path_value="$1"
+    case "$path_value" in
+        "$HOME"/*) echo "~/${path_value#"$HOME"/}" ;;
+        *) echo "$path_value" ;;
+    esac
+}
+
+print_host_install_target() {
+    local host_name="$1"
+    local host_dir
+
+    host_dir="$(get_host_dir "$host_name")"
+    echo "  Target: $(display_path "$host_dir")"
+    if [ "$host_name" = "codex" ]; then
+        echo "  Note: Codex loads skills from ~/.agents/skills; ~/.codex/skills is not used."
+    fi
+}
+
 is_execution_cli_installed() {
     local cli_command
     cli_command=$(get_execution_cli_command "$1") || return 1
@@ -695,6 +714,7 @@ select_single_host() {
         run_menu "Select one install host" "single" "Please select one install host."
         SELECTED_INSTALL_HOSTS=("$MENU_RESULT")
         echo -e "${GREEN}Selected install host: $(get_host_label "$MENU_RESULT")${NC}"
+        print_host_install_target "$MENU_RESULT"
         echo ""
         return
     fi
@@ -726,6 +746,7 @@ select_single_host() {
 
     SELECTED_INSTALL_HOSTS=("$selected_host")
     echo -e "${GREEN}Selected install host: $(get_host_label "$selected_host")${NC}"
+    print_host_install_target "$selected_host"
     echo ""
 }
 
@@ -1133,12 +1154,18 @@ prepare_install_targets() {
     mkdir -p "$INSTALL_TARGET_DIR"
 
     if [ "$INSTALL_STRATEGY" != "symlink" ]; then
+        echo -e "${GREEN}✓ Direct install target: $(display_path "$INSTALL_TARGET_DIR")${NC}"
+        if [ "${SELECTED_INSTALL_HOSTS[0]}" = "codex" ]; then
+            echo -e "${YELLOW}Codex single-host installs directly to ~/.agents/skills; no ~/.codex/skills symlink is created.${NC}"
+        fi
+        echo ""
         return
     fi
 
     for host_name in "${SELECTED_INSTALL_HOSTS[@]}"; do
         host_dir="$(get_host_dir "$host_name")"
         if [ "$host_dir" = "$CANONICAL_SKILL_DIR" ]; then
+            echo -e "${GREEN}✓ $(get_host_label "$host_name") uses canonical install target $(display_path "$CANONICAL_SKILL_DIR")${NC}"
             continue
         fi
         mkdir -p "$(dirname "$host_dir")"
