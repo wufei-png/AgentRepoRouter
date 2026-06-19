@@ -1,5 +1,9 @@
 # AgentRepoRouter
 
+<p align="center">
+  <img src="images/cover/cover-03-architecture-board.png" alt="AgentRepoRouter Cover" width="100%">
+</p>
+
 [中文版](README_CN.md) | English
 
 Repo-aware routing for AI coding CLIs as an installable skill for multiple agent hosts.
