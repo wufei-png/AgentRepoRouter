@@ -112,13 +112,16 @@ def test_custom_multi_host_install_uses_global_source_and_selected_symlinks(tmp_
 
 def test_custom_all_detected_toggles_every_detected_host(tmp_path):
     home_dir = tmp_path / "home"
-    fake_bin = make_fake_bin(tmp_path, {"node", "git", "claude", "opencode", "codex"})
+    fake_bin = make_fake_bin(
+        tmp_path,
+        {"node", "git", "openclaw", "claude", "opencode", "codex", "hermes"},
+    )
 
     result = run_install(
         home_dir,
         manual_install_input(
             "1",
-            "1,2,4",
+            "1,2,4,5",
             [str(PROJECT_ROOT)],
             install_mode="3",
             install_hosts="0",
@@ -127,10 +130,19 @@ def test_custom_all_detected_toggles_every_detected_host(tmp_path):
     )
 
     assert result.returncode == 0, result.stdout + result.stderr
-    assert load_deployed_config(home_dir)["installHosts"] == ["claude-code", "opencode", "codex"]
-    assert deployed_host_path(home_dir, "claude-code").is_symlink()
-    assert deployed_host_path(home_dir, "opencode").is_symlink()
-    assert not deployed_host_path(home_dir, "openclaw").exists()
+    assert load_deployed_config(home_dir)["installHosts"] == [
+        "openclaw",
+        "claude-code",
+        "opencode",
+        "codex",
+        "hermes",
+    ]
+    assert deployed_skill_path(home_dir).exists()
+
+    for host in ["openclaw", "claude-code", "opencode", "hermes"]:
+        host_path = deployed_host_path(home_dir, host)
+        assert host_path.is_symlink()
+        assert host_path.resolve() == deployed_skill_path(home_dir).parent.resolve()
 
 
 def test_existing_real_host_directory_can_be_backed_up_before_symlink(tmp_path):
