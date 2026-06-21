@@ -1,128 +1,113 @@
-# 为什么已经有 Claude Code、Codex、Cursor、OpenCode、Hermes，还值得装一个 AgentRepoRouter
+# 已经有 Claude Code、Codex、Cursor、OpenCode、Hermes，为什么还要 AgentRepoRouter
 
-如果你现在已经在同时使用多个 AI coding CLI，你大概率已经遇到过这些问题：
+如果你只用一个 coding CLI，只有一两个 repo，AgentRepoRouter 可能不是刚需。
 
-- 你知道这个任务应该在某个 repo 里做，但要先想起来路径。
-- 你记得某个项目里有自定义 skill 或 agent，但不记得它挂在哪个 CLI 目录下。
-- 你想把一个 agent host 当成统一入口，但真正执行时还是要自己切换到 Claude Code、OpenCode、Cursor、Codex 或 Hermes。
-- 你并不一定需要一个庞大的多 agent 调度平台，你只是想“先路由对，再调用对”。
+但很多人现在的工作台已经变成这样：Claude Code、Codex、Cursor、OpenCode、Hermes 都在用；每个项目又有自己的 skill、agent、AGENTS.md 或本地约定。真正烦人的地方不是模型不够多，而是每次开工前都要先想一遍：
 
-这正是 AgentRepoRouter 的切入点。
+- 这个任务该进哪个 repo？
+- 这个 repo 的路径在哪里？
+- 这个项目有没有已经写好的 skill 或 agent？
+- 这次更适合交给哪个 CLI？
+- 我能不能继续从当前 host 发起，而不是手动切到另一套工具？
+
+AgentRepoRouter 解决的就是这层导航问题。
 
 ![AgentRepoRouter 宣传图](../../images/cover/cover-03-architecture-board.png)
 
-## AgentRepoRouter 不是另一个大而全平台
+## 它不是新的执行平台
 
-AgentRepoRouter 不是要替代 OpenClaw、Claude Code、OpenCode、Codex 或 Hermes，也不是要重造 Claude Code、Codex、Cursor、OpenCode、Hermes。
+AgentRepoRouter 不替代 OpenClaw、Claude Code、OpenCode、Codex 或 Hermes，也不接管它们的运行时。
 
-它做的事情很克制：
+它是一个可安装到多个 agent host 的 skill。安装后，host 先读取 `repo_mappings.json`，根据 repo 名、alias、项目级 skill/agent 摘要和默认 CLI 顺序做路由判断。真正执行时，仍然调用原生 CLI。
 
-- 让当前 agent host 成为统一入口
-- 让 Router Skill 先选对 repo
-- 再根据 repo aliases、project-level skills、project-level agents 选对路径
-- 最后仍然调用原生 CLI 执行
-
-一句话概括：
+更准确地说：
 
 > Agent host 管入口，AgentRepoRouter 管路由，原生 CLI 管执行。
 
-## 它解决的是“入口碎片化”，不是“算力不够多”
+这也是它和重型 orchestration 平台的边界。它不做任务看板，不管理 worktree 生命周期，不负责 PR、CI、review comments 的全自动闭环。它先把入口、仓库和执行 CLI 选对。
 
-现在市面上已经有不少很强的 agent orchestration 项目：
+## 当前实现已经做到什么
 
-- 有的擅长并行 fan-out，让多个模型同时 review
-- 有的擅长 worktree、PR 生命周期、CI 自动修复
-- 有的擅长看板和长期任务流转
+当前版本不是一个只写在 README 里的想法。仓库里已经有可用的安装器、schema v2 配置、Router Skill 和测试。
 
-这些项目很强，但也更重。
+安装器会做这些事：
 
-AgentRepoRouter 的设计思路刚好相反：它先把最常见、最频繁、最影响效率的那层问题解决掉。
+- 检查 Node.js 18+ 和 Git。
+- 选择中文或英文 skill。
+- 选择安装模式：Global、Single host 或 Custom hosts。
+- 选择要安装到哪些 host：OpenClaw、Claude Code、OpenCode、Codex、Hermes。
+- 选择可作为执行后端的 CLI：Claude Code、OpenCode、Cursor、Codex、Hermes。
+- 通过自动扫描或手动输入收集本地 repo。
+- 生成 `references/repo_mappings.json`。
+- 部署选定语言的 `SKILL.md` 和对应 `references/guide.*.md`。
 
-那就是：
-
-- 这个任务属于哪个 repo？
-- 这个 repo 有没有现成的 skill 或 agent？
-- 这个场景更适合哪个 CLI？
-- 在不破坏原生约定的前提下，怎么让当前 host 自动导航过去？
-
-## AgentRepoRouter 的关键设计亮点
-
-### 1. 它是多 host skill，不是外挂控制台
-
-你不需要再维护另一个 orchestrator 主进程，也不需要再接受一套新的 runtime 心智模型。
-
-安装后，AgentRepoRouter 直接落在：
+默认的 Global 模式会把规范副本写到：
 
 ```text
 ~/.agents/skills/agent-repo-router/
 ```
 
-这意味着它天然适合已经把某个 agent host 当作日常入口的人。
+然后把检测到的 host skill 目录软链接到这里。Single host 模式则直接写入某一个 host 的 skill 目录。Codex 目标本身就是 `~/.agents/skills/agent-repo-router`，不会创建 `~/.codex/skills`。
 
-### 2. 它把 repo 配置从“路径列表”升级成了“路由目录”
+## `repo_mappings.json` 才是重点
 
-现在的 `repo_mappings.json` 不只是路径表，而是一个可导航的 repo catalog：
+AgentRepoRouter 的路由上下文都在 `repo_mappings.json` 里。
 
-- `name`: 正式 repo 名
-- `path`: 绝对路径
-- `aliases`: repo 别名，比如 `api`、`admin`、`docs`
-- `skills`: 已检测到的 project-level skills 摘要
-- `agents`: 已检测到的 project-level agents 摘要
+配置结构大致是这样：
 
-这一步非常关键。
+```json
+{
+  "schemaVersion": 2,
+  "installMode": "global",
+  "installHosts": ["global", "openclaw", "claude-code", "opencode", "codex", "hermes"],
+  "executionClis": ["claude-code", "opencode", "cursor", "codex", "hermes"],
+  "repos": [
+    {
+      "name": "my-backend",
+      "path": "/path/to/backend",
+      "aliases": ["backend", "api"],
+      "skills": {},
+      "agents": {}
+    }
+  ]
+}
+```
 
-以前只有路径时，Router 只能靠 repo 名和任务文本猜。
-现在有了 aliases、skills、agents，host 在真正执行前就已经拿到了结构化导航线索。
+这里有一个需要说清楚的点：安装器不会替你猜 alias。新扫描出来的 repo 默认是 `aliases: []`。你需要自己把 `api`、`admin`、`docs` 这类日常叫法补进去。
 
-### 3. 它尊重各个 CLI 的原生生态
+安装器会扫描项目里的部分已知目录，提取 project-level skills 和 agents 的名称与描述，写入 `skills` 和 `agents` 字段。Router Skill 会把这些信息当作强提示，而不是凭空创建能力。
 
-AgentRepoRouter 不会强行把所有 CLI 抹平。
+这比单纯保存路径有用得多。Router 不只知道“这个目录存在”，还知道“这个 repo 里可能已经有 build_and_test skill”或“这个 repo 里有 bugfix agent”。
 
-它接受现实：
+## 它保留各 CLI 的原生约定
 
-- Claude Code 有自己的 `.claude/agents/` 和 `.claude/skills/`
-- OpenCode 有自己的 `.opencode/agents/` 和 `.opencode/skills/`
-- Cursor 有自己的 agent 方式
-- Codex 有 `.agents/skills/`、`.codex/agents/`、`AGENTS.md`
-- Hermes 有自己的 `~/.hermes/skills/software-development/` 分类
+AgentRepoRouter 没有把所有 CLI 包成一套新协议。它保留各自的调用方式：
 
-很多“统一层”做着做着就会把这些差异都抽象掉，最后抽象反而成了损耗。
+| CLI | 命令形态 |
+| --- | --- |
+| Claude Code | `cd /path && claude -p "task"` |
+| Claude Code agent | `cd /path && claude --agent <name> "task"` |
+| OpenCode | `cd /path && opencode run "task"` |
+| Cursor | `cd /path && agent -p "task"` |
+| Codex | `cd /path && codex exec "task"` |
+| Hermes | `cd /path && hermes --oneshot "task"` |
 
-AgentRepoRouter 的亮点恰恰在于：它统一入口，但不破坏原生约定。
+OpenCode 和 Cursor 的自定义 agent 目前通过提示词调用，例如 `use agent <name> to do...`。Codex 的项目级 skill、agent 和 `AGENTS.md` 也按 Codex 自己的目录约定处理。
 
-### 4. 它先看项目级资产，再看全局默认
+这点很重要。很多统一层为了“统一”，会把原生差异藏起来，最后排查问题时反而更难。AgentRepoRouter 的选择更朴素：入口统一，执行保持原样。
 
-这是一个非常正确的产品判断。
+## 路由顺序很简单
 
-真正和 repo 强绑定的 skill 和 agent，优先级本来就应该高于全局通用 helper。
+Router Skill 的判断顺序是：
 
-AgentRepoRouter 的 Router Skill 会先看：
+1. 先确定目标 repo。用户明确说了项目，就优先用用户指定的项目；没说清楚时，再根据 repo name、alias 和任务内容判断。
+2. 在目标 repo 里优先看项目级 skill 和 agent。`repo_mappings.json` 里已经检测到的摘要会作为强提示。
+3. 项目级没有可靠命中时，再保守考虑全局 skill 和 agent。
+4. 还是没有可靠命中，就按 `executionClis` 的顺序回退到默认 CLI。
 
-- repo 是否命中
-- alias 是否命中
-- 该 repo 是否已经检测到项目级 skill
-- 该 repo 是否已经检测到项目级 agent
+这个顺序不会让它变成万能调度器，但能让行为更可检查。你可以打开配置文件，看它为什么会优先想到某个 repo 或某个 CLI。
 
-只有这些都不够可靠时，才走全局和 fallback。
-
-这个顺序让行为更可预测，也更接近真实团队项目的工作方式。
-
-### 5. 它是“轻编排”，所以上手成本低
-
-你不需要：
-
-- 先建一个复杂看板
-- 配一堆 worktree 生命周期
-- 接入 PR 机器人
-- 引入额外后台调度服务
-
-如果你现在最大的痛点只是：
-
-> 我已经有好几个 CLI 和好几个 repo，但我想让当前 host 自动帮我走到最合适的执行路径。
-
-那 AgentRepoRouter 正好够用。
-
-## 一个很典型的使用场景
+## 一个典型场景
 
 假设你对已安装 AgentRepoRouter 的 host 说：
 
@@ -130,64 +115,47 @@ AgentRepoRouter 的 Router Skill 会先看：
 fix the auth bug in the api project, use the repo's build_and_test skill
 ```
 
-AgentRepoRouter 可以做的事情是：
+如果你已经在配置里给后端仓库加了 `api` alias，并且安装器检测到了 `build_and_test`，Router 可以这样处理：
 
-1. 先通过 `api` 命中 repo alias
-2. 在该 repo 的 `repo_mappings.json` 条目里看到已检测的 `build_and_test` skill
-3. 看到该 repo 下还存在某个 `bugfix` agent
-4. 根据 repo 上下文和 CLI 顺序选中最合适的执行路径
-5. 最终仍然调用原生 CLI 直接执行
+1. 用 `api` 命中目标 repo。
+2. 读取该 repo 下已检测的 `build_and_test` skill 摘要。
+3. 如果有匹配的项目级 agent，比如 `bugfix`，把它也作为执行提示。
+4. 按 CLI 原生约定生成执行方式。
+5. 在目标 repo 里调用对应 CLI。
 
-这个过程看起来不“炫技”，但它非常实用。
+这个流程不花哨，但很省心。你少做一次找路径、查配置、切 CLI 的重复动作。
 
-因为它把你每天都会重复做的导航动作，收进了一次对话里。
+## 适合谁
 
-## AgentRepoRouter 适合谁
+AgentRepoRouter 适合这些人：
 
-它最适合这些用户：
+- 已经把某个 agent host 当作日常入口。
+- 同时使用两个或更多 coding CLI。
+- 本地有多个 repo，经常在它们之间切换。
+- repo 里已经维护了 project-level skills 或 agents。
+- 想要轻一点的路由层，而不是一上来就引入完整编排平台。
 
-- 已经把某个 agent host 当作主要入口的人
-- 同时使用 Claude Code、Codex、OpenCode、Cursor、Hermes 中两个或以上的人
-- 有多个本地 repo，需要在它们之间频繁切换的人
-- 已经在 repo 内维护了 project-level skills 或 agents，希望这些资产能被自动利用的人
-- 不想一上来就上重型 orchestration 平台的人
+它不太适合这些需求：
 
-## AgentRepoRouter 不适合谁
+- 同一个任务并行跑多个 CLI，再做结果共识。
+- 自动管理 worktree、PR、CI 和 review comments 的完整生命周期。
+- 强约束的多阶段 SDLC 编排。
 
-如果你的核心需求是下面这些，AgentRepoRouter 不是主角：
+这些场景可以交给 MCO、agtx、Agent Orchestrator、metaswarm 一类更重的工具。AgentRepoRouter 更适合放在前面，先把入口和 repo 路由理顺。
 
-- 你要同一个任务并行跑 3 到 5 个 CLI 做结果共识
-- 你要 worktree、PR、CI、review comments 的全自动生命周期
-- 你要一个强约束的多阶段 SDLC orchestration 系统
+## 为什么现在可以试
 
-这时更适合把 AgentRepoRouter 放在前面做入口和路由，再配合别的重型项目完成后续编排。
+现在这个版本已经有几个可验证的基础：
 
-## 为什么现在值得试
+- 安装器。
+- schema v2 `repo_mappings.json`。
+- repo aliases 字段。
+- project-level skills 和 agents 检测。
+- 中英文 Router Skill。
+- `references/` 文档拆分 CLI 细节。
+- 单元测试、集成测试、E2E 测试和可选 live E2E。
 
-现在这个版本的 AgentRepoRouter 已经不再只是一个“提示词路由器”。
-
-它已经具备了几个更有含金量的特征：
-
-- 有安装器
-- 有结构化 repo config
-- 有 aliases
-- 有自动检测的 project-level skills 和 agents
-- 有 references 文档把复杂 CLI 约定拆出去
-- 有单测、集成测试、E2E 测试和可选 live E2E
-
-这意味着它已经从“想法”进入了“可以持续打磨的产品骨架”。
-
-## 最后的判断
-
-如果你期待的是一个能代替所有 agent runtime 的超级平台，AgentRepoRouter 不是那个项目。
-
-但如果你期待的是：
-
-> 用一个 host 统一入口，把多 repo、多 CLI、多项目级 skill/agent 的导航问题一次性理顺。
-
-那 AgentRepoRouter 值得你试一次。
-
-它的价值，不在于有多重，而在于它正好卡在一个很多人已经开始痛、但还没有被很好填平的空位上。
+它还不是完整编排产品，但已经够用来验证一个判断：多 CLI、多 repo、多项目级资产的入口问题，可以先用一个轻量 skill 解决。
 
 ## 快速开始
 
@@ -196,10 +164,10 @@ curl -fsSL https://raw.githubusercontent.com/wufei-png/AgentRepoRouter/main/scri
 openclaw
 ```
 
-安装完成后，优先看一眼：
+安装完成后，先看这个文件：
 
 ```text
 ~/.agents/skills/agent-repo-router/references/repo_mappings.json
 ```
 
-把 repo alias 补好，确认自动检测到的 skills 和 agents 是否符合你的项目实际情况。做到这一步，你就已经把 coding 入口体验往前推了一大截。
+把常用 repo alias 补好，再检查自动检测到的 skills 和 agents 是否准确。做到这一步，AgentRepoRouter 才真正知道你平时说的 `api`、`admin`、`docs` 分别指向哪里。
