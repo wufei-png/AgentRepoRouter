@@ -6,6 +6,10 @@
   <img src="images/cover/cover-03-architecture-board.png" alt="AgentRepoRouter Cover" width="100%">
 </p>
 
+Repo-aware routing for AI coding CLIs as an installable skill for multiple agent hosts.
+
+AgentRepoRouter installs into OpenClaw, Claude Code, OpenCode, Codex, and Hermes skill locations. It does not replace those tools. It routes tasks to the right repo, preserves each CLI's native agent and skill conventions, and uses structured repo metadata to improve navigation.
+
 ## Flow Overview
 
 ### Install and Configuration Generation
@@ -80,10 +84,6 @@ flowchart TD
     codex --> result
     hermes --> result
 ```
-
-Repo-aware routing for AI coding CLIs as an installable skill for multiple agent hosts.
-
-AgentRepoRouter installs into OpenClaw, Claude Code, OpenCode, Codex, and Hermes skill locations. It does not replace those tools. It routes tasks to the right repo, preserves each CLI's native agent and skill conventions, and uses structured repo metadata to improve navigation.
 
 ## Why AgentRepoRouter Exists
 
