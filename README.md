@@ -4,6 +4,81 @@
   <img src="images/cover/cover-03-architecture-board.png" alt="AgentRepoRouter Cover" width="100%">
 </p>
 
+## Flow Overview
+
+### Install and Configuration Generation
+
+```mermaid
+flowchart TD
+    start["Start scripts/install.sh"] --> env["Check Node.js 18+, Git, and TTY support"]
+    env --> hosts["Detect available agent hosts"]
+    hosts --> lang["Select skill language: Chinese / English"]
+    lang --> mode{"Select install mode"}
+
+    mode -->|Global| global["Write canonical skill directory: ~/.agents/skills/agent-repo-router"]
+    mode -->|Single host| single["Write selected host skill directory directly"]
+    mode -->|Custom hosts| custom["Write canonical directory and link selected hosts"]
+
+    global --> installHosts["Resolve installHosts"]
+    single --> installHosts
+    custom --> installHosts
+
+    installHosts --> clis["Select executionClis"]
+    clis --> discovery{"Choose project discovery mode"}
+    discovery -->|Auto scan| autoScan["Scan local projects and collect repo metadata"]
+    discovery -->|Manual| manual["Enter absolute project paths"]
+
+    autoScan --> assets["Detect project-level skills and agents"]
+    manual --> assets
+    assets --> mapping["Generate schema v2 repo_mappings.json"]
+    mapping --> deploy["Deploy SKILL.md and references/guide.*.md"]
+    deploy --> links{"Need host symlinks?"}
+    links -->|Global / Custom hosts| symlink["Symlink host skill directories to the canonical directory"]
+    links -->|Single host| direct["Keep direct host install directory"]
+    symlink --> validate["Validate repo_mappings.json"]
+    direct --> validate
+    validate --> done["Install complete: host can load agent-repo-router"]
+```
+
+### Runtime Routing and Execution
+
+```mermaid
+flowchart TD
+    user["User submits a coding task"] --> host["OpenClaw / Claude Code / OpenCode / Codex / Hermes"]
+    host --> skill["Load agent-repo-router Skill"]
+    skill --> config["Read references/repo_mappings.json"]
+    config --> repoDecision{"Can the target repo be resolved confidently?"}
+
+    repoDecision -->|User specified repo| targetRepo["Use the user-specified repo"]
+    repoDecision -->|repo name / alias / task intent match| targetRepo
+    repoDecision -->|No reliable match| askRepo["Ask the user for the target repo"]
+    askRepo --> targetRepo
+
+    targetRepo --> projectHints["Read aliases, skills, and agents for the repo"]
+    projectHints --> projectAssets{"Project-level skill / agent matched?"}
+
+    projectAssets -->|Yes| projectPlan["Compose skill / agent prompt using the native CLI convention"]
+    projectAssets -->|No| globalAssets{"Global skill / agent strictly matched?"}
+    globalAssets -->|Yes| globalPlan["Attach global capability conservatively"]
+    globalAssets -->|No| fallback["Fallback by executionClis order"]
+
+    projectPlan --> chooseCli{"Choose execution CLI"}
+    globalPlan --> chooseCli
+    fallback --> chooseCli
+
+    chooseCli --> claude["Claude Code: cd repo && claude -p task"]
+    chooseCli --> opencode["OpenCode: cd repo && opencode run task"]
+    chooseCli --> cursor["Cursor: cd repo && agent -p task"]
+    chooseCli --> codex["Codex: cd repo && codex exec task"]
+    chooseCli --> hermes["Hermes: cd repo && hermes --oneshot task"]
+
+    claude --> result["Native CLI runs in the target repo and returns the result"]
+    opencode --> result
+    cursor --> result
+    codex --> result
+    hermes --> result
+```
+
 [中文版](README_CN.md) | English
 
 Repo-aware routing for AI coding CLIs as an installable skill for multiple agent hosts.

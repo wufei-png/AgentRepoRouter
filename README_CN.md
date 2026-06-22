@@ -8,6 +8,81 @@ AgentRepoRouter 可以安装到 OpenClaw、Claude Code、OpenCode、Codex 与 He
 
 ![AgentRepoRouter 宣传图](docs/advertisement/ads.png)
 
+## 流程总览
+
+### 安装与配置生成
+
+```mermaid
+flowchart TD
+    start["启动 scripts/install.sh"] --> env["检查 Node.js 18+、Git、TTY 能力"]
+    env --> hosts["检测可用 host"]
+    hosts --> lang["选择 Skill 语言：中文 / English"]
+    lang --> mode{"选择安装模式"}
+
+    mode -->|Global| global["写入 canonical 目录：~/.agents/skills/agent-repo-router"]
+    mode -->|Single host| single["写入选中 host 的直接 skill 目录"]
+    mode -->|Custom hosts| custom["写入 canonical 目录，并链接选中的 hosts"]
+
+    global --> installHosts["确定 installHosts"]
+    single --> installHosts
+    custom --> installHosts
+
+    installHosts --> clis["选择 executionClis"]
+    clis --> discovery{"发现项目方式"}
+    discovery -->|Auto scan| autoScan["扫描本机项目并收集 repo metadata"]
+    discovery -->|Manual| manual["录入项目绝对路径"]
+
+    autoScan --> assets["检测项目级 skills 与 agents"]
+    manual --> assets
+    assets --> mapping["生成 schema v2 repo_mappings.json"]
+    mapping --> deploy["部署 SKILL.md 与 references/guide.*.md"]
+    deploy --> links{"是否需要 host 软链接？"}
+    links -->|Global / Custom hosts| symlink["将 host skill 目录软链接到 canonical 目录"]
+    links -->|Single host| direct["保留直接安装目录"]
+    symlink --> validate["校验 repo_mappings.json"]
+    direct --> validate
+    validate --> done["安装完成：host 可加载 agent-repo-router"]
+```
+
+### 运行时路由与执行
+
+```mermaid
+flowchart TD
+    user["用户提交编码任务"] --> host["OpenClaw / Claude Code / OpenCode / Codex / Hermes"]
+    host --> skill["加载 agent-repo-router Skill"]
+    skill --> config["读取 references/repo_mappings.json"]
+    config --> repoDecision{"能可靠确定目标 repo？"}
+
+    repoDecision -->|用户明确指定| targetRepo["使用用户指定 repo"]
+    repoDecision -->|repo name / alias / task intent 命中| targetRepo
+    repoDecision -->|不能可靠确定| askRepo["询问用户补充目标 repo"]
+    askRepo --> targetRepo
+
+    targetRepo --> projectHints["读取该 repo 的 aliases、skills、agents 摘要"]
+    projectHints --> projectAssets{"项目级 skill / agent 命中？"}
+
+    projectAssets -->|是| projectPlan["按对应 CLI 原生约定组合 skill / agent 提示"]
+    projectAssets -->|否| globalAssets{"全局 skill / agent 严格命中？"}
+    globalAssets -->|是| globalPlan["保守附加全局能力"]
+    globalAssets -->|否| fallback["按 executionClis 顺序 fallback"]
+
+    projectPlan --> chooseCli{"选择执行 CLI"}
+    globalPlan --> chooseCli
+    fallback --> chooseCli
+
+    chooseCli --> claude["Claude Code：cd repo && claude -p task"]
+    chooseCli --> opencode["OpenCode：cd repo && opencode run task"]
+    chooseCli --> cursor["Cursor：cd repo && agent -p task"]
+    chooseCli --> codex["Codex：cd repo && codex exec task"]
+    chooseCli --> hermes["Hermes：cd repo && hermes --oneshot task"]
+
+    claude --> result["原生 CLI 在目标 repo 内执行并返回结果"]
+    opencode --> result
+    cursor --> result
+    codex --> result
+    hermes --> result
+```
+
 ## 为什么需要 AgentRepoRouter
 
 很多开发者现在同时拥有多个 coding CLI、多个仓库，以及多个自定义 agent/skill 的存放位置。
