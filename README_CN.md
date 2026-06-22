@@ -1,6 +1,6 @@
-# AgentRepoRouter
-
 中文版 | [English](README.md)
+
+# AgentRepoRouter
 
 面向多个 agent host 的 repo-aware AI 编程 CLI 路由 skill。
 

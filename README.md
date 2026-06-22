@@ -1,3 +1,5 @@
+[中文版](README_CN.md) | English
+
 # AgentRepoRouter
 
 <p align="center">
@@ -78,8 +80,6 @@ flowchart TD
     codex --> result
     hermes --> result
 ```
-
-[中文版](README_CN.md) | English
 
 Repo-aware routing for AI coding CLIs as an installable skill for multiple agent hosts.
 
