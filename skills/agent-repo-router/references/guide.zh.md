@@ -1,6 +1,6 @@
 # AgentRepoRouter Reference
 
-这份参考文档提供 AgentRepoRouter Skill 的详细约定。运行时主规则在 `../SKILL.zh.md`。
+这份参考文档提供 AgentRepoRouter Skill 的详细约定。
 
 ## CLI 细节
 

@@ -62,7 +62,7 @@ curl -fsSL https://raw.githubusercontent.com/wufei-png/AgentRepoRouter/main/scri
 4. 选择安装 host
 5. 选择执行 CLI
 6. 发现项目（Auto scan / Manual）
-7. 部署 `skills/agent-repo-router/SKILL.<lang>.md`
+7. 将选中语言模板部署为目标目录的 `SKILL.md`
 8. 写入 `references/repo_mappings.json`
 
 ### skills/agent-repo-router/

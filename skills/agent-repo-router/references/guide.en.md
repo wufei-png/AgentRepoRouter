@@ -1,6 +1,6 @@
 # AgentRepoRouter Reference
 
-This reference document holds the longer AgentRepoRouter conventions. The runtime-facing rules stay in `../SKILL.en.md`.
+This reference document holds the longer AgentRepoRouter conventions.
 
 ## CLI Details
 
