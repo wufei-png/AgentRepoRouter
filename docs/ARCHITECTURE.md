@@ -35,13 +35,19 @@
 ### install.sh
 安装脚本，负责初始化配置：
 1. 检查环境（Node.js, Git）并检测可用 host
-2. 选择语言（中文/English）
-3. 选择安装模式（Global / Single host / Custom hosts）
-4. 选择安装 host
-5. 选择执行 CLI 工具
-6. 发现项目（Auto scan / Manual）
-7. 生成 schema v2 `repo_mappings.json`
-8. 部署选中的 Router Skill
+2. 解析非交互参数；未提供参数时进入交互式菜单
+3. 选择语言（中文/English）；`--yes` 模式默认 `zh`
+4. 选择安装模式（Global / Single host / Custom hosts）
+5. 选择安装 host；`--hosts all` 表示所有检测到的 host，没有检测到时回退到 Codex canonical 目标
+6. 选择执行 CLI 工具；`--execution-clis all` 表示所有检测到的执行 CLI，显式指定的 CLI 必须已安装
+7. 发现项目（Auto scan / Manual / repeated `--repo`）
+   - 自动扫描默认深度为 `5`
+   - 可用 `--scan-depth N` 或 `AGENT_REPO_ROUTER_SCAN_MAX_DEPTH=N` 调整
+   - `--repo` 指向 git repo 内部时会归一到 repo root
+   - `--repo` 指向非 git 目录时按扫描深度查找 `.git` 目录或 `.git` 文件
+8. 处理已有安装目标；默认 `--existing backup` 会备份旧 install target，不自动 merge 旧 `repo_mappings.json`
+9. 生成 schema v2 `repo_mappings.json`
+10. 部署选中的 Router Skill
 
 ### Router Skill
 - 读取 `references/repo_mappings.json` 获取配置

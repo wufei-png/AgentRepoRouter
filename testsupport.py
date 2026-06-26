@@ -127,6 +127,31 @@ def run_install(
     )
 
 
+def run_install_args(
+    home_dir: Path,
+    args: list[str],
+    extra_env: dict[str, str] | None = None,
+    input_text: str | None = None,
+) -> subprocess.CompletedProcess[str]:
+    env = os.environ.copy()
+    env["HOME"] = str(home_dir)
+    env.setdefault("AGENT_REPO_ROUTER_USE_LOCAL_CACHE", "true")
+    if extra_env:
+        env.update(extra_env)
+
+    home_dir.mkdir(parents=True, exist_ok=True)
+
+    return subprocess.run(
+        ["/bin/bash", str(INSTALL_SCRIPT), *args],
+        input=input_text,
+        text=True,
+        capture_output=True,
+        cwd=PROJECT_ROOT,
+        env=env,
+        check=False,
+    )
+
+
 def manual_install_input(
     language: str,
     clis: str,

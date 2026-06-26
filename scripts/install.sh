@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
 # AgentRepoRouter installation script.
 # Usage: curl -fsSL https://.../install.sh | bash
@@ -16,21 +16,30 @@ REPO_MAPPINGS_SCHEMA_VERSION=2
 AGENT_REPO_ROUTER_REPO="${AGENT_REPO_ROUTER_REPO:-wufei-png/AgentRepoRouter}"
 AGENT_REPO_ROUTER_BRANCH="${AGENT_REPO_ROUTER_BRANCH:-main}"
 REMOTE_RAW_BASE_URL="https://raw.githubusercontent.com/${AGENT_REPO_ROUTER_REPO}/${AGENT_REPO_ROUTER_BRANCH}"
-# Defaults to GitHub raw for pipe installs. Set true when running from a clone.
-AGENT_REPO_ROUTER_USE_LOCAL_CACHE="${AGENT_REPO_ROUTER_USE_LOCAL_CACHE:-false}"
+# Use local files from a clone when available; pipe installs fall back to GitHub raw.
+AGENT_REPO_ROUTER_USE_LOCAL_CACHE="${AGENT_REPO_ROUTER_USE_LOCAL_CACHE:-auto}"
+SCAN_MAX_DEPTH="${AGENT_REPO_ROUTER_SCAN_MAX_DEPTH:-5}"
+SCAN_DEPTH_CONFIGURED=0
+if [ -n "${AGENT_REPO_ROUTER_SCAN_MAX_DEPTH:-}" ]; then
+    SCAN_DEPTH_CONFIGURED=1
+fi
+
+YES=0
+HOSTS_RAW=""
+HOSTS_ARG_SET=0
+EXECUTION_CLIS_RAW=""
+EXECUTION_CLIS_ARG_SET=0
+EXISTING="backup"
+EXISTING_ARG_SET=0
+AUTO_SCAN=0
+SCAN_ROOT=""
+REPO_ARGS=()
 
 TTY_FD=9
 TTY_AVAILABLE=0
 if { exec 9<>/dev/tty; } 2>/dev/null; then
     TTY_AVAILABLE=1
 fi
-
-agent_repo_router_use_local_cache() {
-    case "${AGENT_REPO_ROUTER_USE_LOCAL_CACHE}" in
-        1|true|TRUE|True|yes|YES|on|ON) return 0 ;;
-        *) return 1 ;;
-    esac
-}
 
 SELECTED_CLIS=()
 REPOS=()
@@ -53,6 +62,111 @@ MENU_CURSOR=0
 MENU_LINES=0
 MENU_MESSAGE=""
 MENU_ALL_DETECTED_MODE=0
+SELECTED_EXISTING_ACTION=""
+EXISTING_DECISION_PATHS=()
+EXISTING_DECISION_ACTIONS=()
+
+usage() {
+    cat >&2 <<'EOF'
+Usage:
+  install.sh [--yes] --repo PATH [--repo PATH ...] [--language zh|en] [--install-mode global|single|custom] [--hosts all|openclaw,claude-code,opencode,codex,hermes] [--execution-clis all|claude-code,opencode,cursor,codex,hermes] [--existing backup|skip|overwrite] [--scan-depth N]
+  install.sh [--yes] --auto-scan --scan-root PATH [--scan-depth N] [--language zh|en] [--install-mode global|single|custom] [--hosts all|openclaw,claude-code,opencode,codex,hermes] [--execution-clis all|claude-code,opencode,cursor,codex,hermes] [--existing backup|skip|overwrite]
+  install.sh
+
+Pipe install:
+  curl -fsSL https://raw.githubusercontent.com/wufei-png/AgentRepoRouter/main/scripts/install.sh | bash
+EOF
+    exit 1
+}
+
+require_arg() {
+    local option="$1"
+    local value="${2:-}"
+
+    if [ -z "$value" ]; then
+        echo "Error: $option requires a value" >&2
+        usage
+    fi
+}
+
+parse_args() {
+    while [ "$#" -gt 0 ]; do
+        case "$1" in
+            --yes)
+                YES=1
+                shift
+                ;;
+            --language)
+                require_arg "$1" "${2:-}"
+                SKILL_LANG="$2"
+                shift 2
+                ;;
+            --repo)
+                require_arg "$1" "${2:-}"
+                REPO_ARGS+=("$2")
+                shift 2
+                ;;
+            --auto-scan)
+                AUTO_SCAN=1
+                shift
+                ;;
+            --scan-root)
+                require_arg "$1" "${2:-}"
+                SCAN_ROOT="$2"
+                shift 2
+                ;;
+            --scan-depth)
+                require_arg "$1" "${2:-}"
+                SCAN_MAX_DEPTH="$2"
+                SCAN_DEPTH_CONFIGURED=1
+                shift 2
+                ;;
+            --install-mode)
+                require_arg "$1" "${2:-}"
+                INSTALL_MODE="$2"
+                shift 2
+                ;;
+            --hosts)
+                require_arg "$1" "${2:-}"
+                HOSTS_RAW="$2"
+                HOSTS_ARG_SET=1
+                shift 2
+                ;;
+            --execution-clis)
+                require_arg "$1" "${2:-}"
+                EXECUTION_CLIS_RAW="$2"
+                EXECUTION_CLIS_ARG_SET=1
+                shift 2
+                ;;
+            --existing)
+                require_arg "$1" "${2:-}"
+                EXISTING="$2"
+                EXISTING_ARG_SET=1
+                shift 2
+                ;;
+            -h|--help)
+                usage
+                ;;
+            *)
+                echo "Error: unknown option: $1" >&2
+                usage
+                ;;
+        esac
+    done
+
+    case "$SKILL_LANG" in ""|zh|en) ;; *) usage ;; esac
+    case "$INSTALL_MODE" in ""|global|single|custom) ;; *) usage ;; esac
+    case "$EXISTING" in backup|skip|overwrite) ;; *) usage ;; esac
+    case "$SCAN_MAX_DEPTH" in ""|*[!0-9]*|0) usage ;; esac
+    case "$AGENT_REPO_ROUTER_USE_LOCAL_CACHE" in
+        auto|1|true|TRUE|True|yes|YES|on|ON|0|false|FALSE|False|no|NO|off|OFF)
+            ;;
+        *)
+            echo "Error: AGENT_REPO_ROUTER_USE_LOCAL_CACHE must be auto, true, or false" >&2
+            exit 1
+            ;;
+    esac
+}
 
 download_remote_file() {
     local remote_path="$1"
@@ -69,6 +183,26 @@ download_remote_file() {
     fi
     echo -e "    ${RED}✗${NC} Failed to download ${remote_path}"
     return 1
+}
+
+should_use_local_file() {
+    local path="$1"
+
+    case "$AGENT_REPO_ROUTER_USE_LOCAL_CACHE" in
+        1|true|TRUE|True|yes|YES|on|ON)
+            if [ -f "$path" ]; then
+                return 0
+            fi
+            echo -e "${RED}Error: required local file is missing: $path${NC}" >&2
+            exit 1
+            ;;
+        auto)
+            [ -f "$path" ]
+            ;;
+        *)
+            return 1
+            ;;
+    esac
 }
 
 check_cli() {
@@ -431,7 +565,7 @@ repo_path_exists() {
     local repo_path="$1"
     local existing_path
 
-    for existing_path in "${REPOS[@]}"; do
+    for existing_path in ${REPOS[@]+"${REPOS[@]}"}; do
         if [ "$existing_path" = "$repo_path" ]; then
             return 0
         fi
@@ -462,6 +596,124 @@ detected_install_hosts() {
     done
 }
 
+is_supported_host() {
+    case "$1" in
+        openclaw|claude-code|opencode|codex|hermes) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+is_supported_execution_cli() {
+    case "$1" in
+        claude-code|opencode|cursor|codex|hermes) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+add_selected_host() {
+    local host_name="$1"
+
+    if ! is_supported_host "$host_name"; then
+        echo "Error: unsupported install host: $host_name" >&2
+        exit 1
+    fi
+    if ! array_contains "$host_name" ${SELECTED_INSTALL_HOSTS[@]+"${SELECTED_INSTALL_HOSTS[@]}"}; then
+        SELECTED_INSTALL_HOSTS+=("$host_name")
+    fi
+}
+
+add_detected_hosts_with_fallback() {
+    local detected_host=""
+
+    while IFS= read -r detected_host; do
+        [ -n "$detected_host" ] || continue
+        add_selected_host "$detected_host"
+    done <<EOF
+$(detected_install_hosts)
+EOF
+
+    if [ "${#SELECTED_INSTALL_HOSTS[@]}" -eq 0 ]; then
+        add_selected_host "codex"
+        echo -e "${YELLOW}Warning: no supported agent host detected; using Codex canonical install target.${NC}"
+    fi
+}
+
+parse_hosts_raw() {
+    local raw_hosts="$1"
+    local host_name=""
+
+    if [ -z "$raw_hosts" ]; then
+        echo "Error: --hosts requires at least one host or all" >&2
+        exit 1
+    fi
+
+    SELECTED_INSTALL_HOSTS=()
+    for host_name in $(printf '%s\n' "$raw_hosts" | tr ',' ' '); do
+        case "$host_name" in
+            all|ALL)
+                add_detected_hosts_with_fallback
+                ;;
+            *)
+                add_selected_host "$host_name"
+                ;;
+        esac
+    done
+
+    if [ "${#SELECTED_INSTALL_HOSTS[@]}" -eq 0 ]; then
+        echo "Error: --hosts requires at least one host or all" >&2
+        exit 1
+    fi
+}
+
+add_selected_execution_cli() {
+    local cli_name="$1"
+
+    if ! is_supported_execution_cli "$cli_name"; then
+        echo "Error: unsupported execution CLI: $cli_name" >&2
+        exit 1
+    fi
+    if ! is_execution_cli_installed "$cli_name"; then
+        echo "Error: selected execution CLI is not installed: $cli_name" >&2
+        exit 1
+    fi
+    if ! array_contains "$cli_name" ${SELECTED_CLIS[@]+"${SELECTED_CLIS[@]}"}; then
+        SELECTED_CLIS+=("$cli_name")
+    fi
+}
+
+add_detected_execution_clis() {
+    local cli_name=""
+
+    SELECTED_CLIS=()
+    for cli_name in "claude-code" "opencode" "cursor" "codex" "hermes"; do
+        if is_execution_cli_installed "$cli_name"; then
+            SELECTED_CLIS+=("$cli_name")
+        fi
+    done
+}
+
+parse_execution_clis_raw() {
+    local raw_clis="$1"
+    local cli_name=""
+
+    if [ -z "$raw_clis" ]; then
+        echo "Error: --execution-clis requires at least one CLI or all" >&2
+        exit 1
+    fi
+
+    SELECTED_CLIS=()
+    for cli_name in $(printf '%s\n' "$raw_clis" | tr ',' ' '); do
+        case "$cli_name" in
+            all|ALL)
+                add_detected_execution_clis
+                ;;
+            *)
+                add_selected_execution_cli "$cli_name"
+                ;;
+        esac
+    done
+}
+
 validate_repo_mappings() {
     local script_dir
     local validate_path
@@ -470,7 +722,7 @@ validate_repo_mappings() {
     script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     validate_path="$script_dir/validate_repo_mappings.sh"
 
-    if agent_repo_router_use_local_cache && [ -f "$validate_path" ]; then
+    if should_use_local_file "$validate_path"; then
         bash "$validate_path" "$1" >/dev/null
         return
     fi
@@ -516,6 +768,23 @@ check_environment() {
 
 select_language() {
     local choice=""
+
+    if [ -n "$SKILL_LANG" ]; then
+        if [ "$SKILL_LANG" = "zh" ]; then
+            echo -e "${GREEN}Selected: 中文${NC}"
+        else
+            echo -e "${GREEN}Selected: English${NC}"
+        fi
+        echo ""
+        return
+    fi
+
+    if [ "$YES" -eq 1 ]; then
+        SKILL_LANG="zh"
+        echo -e "${GREEN}Selected: 中文${NC}"
+        echo ""
+        return
+    fi
 
     if can_use_interactive_menu; then
         MENU_LABELS=("中文" "English")
@@ -591,7 +860,7 @@ print_host_summary() {
 
     echo "Install host status:"
     for host_name in "openclaw" "claude-code" "opencode" "codex" "hermes"; do
-        if array_contains "$host_name" "${SELECTED_INSTALL_HOSTS[@]}"; then
+        if array_contains "$host_name" ${SELECTED_INSTALL_HOSTS[@]+"${SELECTED_INSTALL_HOSTS[@]}"}; then
             marker="[x]"
         else
             marker="[ ]"
@@ -613,7 +882,7 @@ confirm_global_host_preview() {
     MENU_ENABLED=()
     for index in "${!MENU_VALUES[@]}"; do
         value="${MENU_VALUES[$index]}"
-        if array_contains "$value" "${SELECTED_INSTALL_HOSTS[@]}"; then
+        if array_contains "$value" ${SELECTED_INSTALL_HOSTS[@]+"${SELECTED_INSTALL_HOSTS[@]}"}; then
             MENU_SELECTED[$index]=1
         else
             MENU_SELECTED[$index]=0
@@ -639,15 +908,8 @@ confirm_global_host_preview() {
 }
 
 select_global_hosts() {
-    local detected_host
-
     SELECTED_INSTALL_HOSTS=()
-    while IFS= read -r detected_host; do
-        [ -n "$detected_host" ] || continue
-        SELECTED_INSTALL_HOSTS+=("$detected_host")
-    done <<EOF
-$(detected_install_hosts)
-EOF
+    add_detected_hosts_with_fallback
     if can_use_interactive_menu; then
         confirm_global_host_preview
     else
@@ -657,6 +919,59 @@ EOF
 
 select_install_mode() {
     local choice=""
+
+    if [ "$HOSTS_ARG_SET" -eq 1 ]; then
+        parse_hosts_raw "$HOSTS_RAW"
+        if [ -z "$INSTALL_MODE" ]; then
+            if [ "${#SELECTED_INSTALL_HOSTS[@]}" -eq 1 ]; then
+                INSTALL_MODE="single"
+            else
+                INSTALL_MODE="custom"
+            fi
+        fi
+        if [ "$INSTALL_MODE" = "single" ] && [ "${#SELECTED_INSTALL_HOSTS[@]}" -ne 1 ]; then
+            echo "Error: --install-mode single requires exactly one --hosts value" >&2
+            exit 1
+        fi
+        echo -e "${GREEN}Selected install mode: ${INSTALL_MODE}${NC}"
+        print_host_summary
+        return
+    fi
+
+    if [ "$YES" -eq 1 ]; then
+        if [ -z "$INSTALL_MODE" ]; then
+            INSTALL_MODE="global"
+        fi
+        case "$INSTALL_MODE" in
+            global)
+                select_global_hosts
+                ;;
+            single|custom)
+                echo "Error: --install-mode $INSTALL_MODE requires --hosts in --yes mode" >&2
+                exit 1
+                ;;
+        esac
+        echo -e "${GREEN}Selected install mode: ${INSTALL_MODE}${NC}"
+        return
+    fi
+
+    if [ -n "$INSTALL_MODE" ]; then
+        case "$INSTALL_MODE" in
+            global)
+                echo -e "${GREEN}Selected install mode: Global${NC}"
+                select_global_hosts
+                ;;
+            single)
+                echo -e "${GREEN}Selected install mode: Single host${NC}"
+                select_single_host
+                ;;
+            custom)
+                echo -e "${GREEN}Selected install mode: Custom hosts${NC}"
+                select_custom_hosts
+                ;;
+        esac
+        return
+    fi
 
     if can_use_interactive_menu; then
         MENU_LABELS=(
@@ -800,17 +1115,13 @@ select_custom_hosts() {
                     ;;
             esac
 
-            if [ -n "$selected_host" ] && ! array_contains "$selected_host" "${SELECTED_INSTALL_HOSTS[@]}"; then
+            if [ -n "$selected_host" ] && ! array_contains "$selected_host" ${SELECTED_INSTALL_HOSTS[@]+"${SELECTED_INSTALL_HOSTS[@]}"}; then
                 SELECTED_INSTALL_HOSTS+=("$selected_host")
             fi
         done
 
         if [ "$has_all_detected" -eq 1 ]; then
-            while IFS= read -r selected_host; do
-                if [ -n "$selected_host" ] && ! array_contains "$selected_host" "${SELECTED_INSTALL_HOSTS[@]}"; then
-                    SELECTED_INSTALL_HOSTS+=("$selected_host")
-                fi
-            done < <(detected_install_hosts)
+            add_detected_hosts_with_fallback
         fi
 
         if [ "${#SELECTED_INSTALL_HOSTS[@]}" -eq 0 ]; then
@@ -834,6 +1145,28 @@ select_clis() {
     local choice=""
     local selected_cli=""
     local has_error=0
+
+    if [ "$EXECUTION_CLIS_ARG_SET" -eq 1 ]; then
+        parse_execution_clis_raw "$EXECUTION_CLIS_RAW"
+        if [ "${#SELECTED_CLIS[@]}" -eq 0 ]; then
+            echo -e "${RED}No supported execution CLIs were found. Install at least one of claude-code, opencode, cursor, codex, or hermes.${NC}"
+            exit 1
+        fi
+        echo -e "${GREEN}Selected execution CLIs: ${SELECTED_CLIS[*]}${NC}"
+        echo ""
+        return
+    fi
+
+    if [ "$YES" -eq 1 ]; then
+        add_detected_execution_clis
+        if [ "${#SELECTED_CLIS[@]}" -eq 0 ]; then
+            echo -e "${RED}No supported execution CLIs were found. Install at least one of claude-code, opencode, cursor, codex, or hermes.${NC}"
+            exit 1
+        fi
+        echo -e "${GREEN}Selected execution CLIs: ${SELECTED_CLIS[*]}${NC}"
+        echo ""
+        return
+    fi
 
     if [ "$(count_installed_execution_clis)" -eq 0 ]; then
         echo -e "${RED}No supported execution CLIs were found. Install at least one of claude-code, opencode, cursor, codex, or hermes.${NC}"
@@ -903,7 +1236,7 @@ select_clis() {
                 continue
             fi
 
-            if ! array_contains "$selected_cli" "${SELECTED_CLIS[@]}"; then
+            if ! array_contains "$selected_cli" ${SELECTED_CLIS[@]+"${SELECTED_CLIS[@]}"}; then
                 SELECTED_CLIS+=("$selected_cli")
             fi
         done
@@ -925,127 +1258,318 @@ select_clis() {
     echo ""
 }
 
-auto_scan() {
-    local scan_root
-    local git_dir
-    local repo_path
-    local repo_name
+confirm_yes_no() {
+    local prompt="$1"
+    local default_answer="${2:-no}"
+    local answer=""
+    local suffix="[y/N]"
 
-    echo "Auto scan for projects..."
-    echo "Enter root directory to scan (will search for .git directories):"
-    read_user_line "Path: "
-    scan_root="$REPLY"
-
-    if [ ! -d "$scan_root" ]; then
-        echo -e "${RED}Directory does not exist: $scan_root${NC}"
-        return 1
+    if [ "$default_answer" = "yes" ]; then
+        suffix="[Y/n]"
     fi
 
-    scan_root=$(normalize_path "$scan_root")
+    if can_use_interactive_menu; then
+        if [ "$default_answer" = "yes" ]; then
+            MENU_LABELS=("Yes (default)" "No")
+            MENU_VALUES=("yes" "no")
+        else
+            MENU_LABELS=("No (default)" "Yes")
+            MENU_VALUES=("no" "yes")
+        fi
+        MENU_ENABLED=(1 1)
+        MENU_ALL_DETECTED_MODE=0
+        run_menu "$prompt" "single" "Please select yes or no."
+        [ "$MENU_RESULT" = "yes" ]
+        return
+    fi
 
-    echo "Scanning for git repositories..."
-    REPOS=()
+    while true; do
+        read_user_line "$prompt $suffix "
+        answer="$REPLY"
+        case "$answer" in
+            "")
+                [ "$default_answer" = "yes" ]
+                return
+                ;;
+            y|Y|yes|YES) return 0 ;;
+            n|N|no|NO) return 1 ;;
+            *) echo "Please answer yes or no." ;;
+        esac
+    done
+}
 
-    while IFS= read -r git_dir; do
-        repo_path=$(normalize_path "$(dirname "$git_dir")")
-        repo_name=$(basename "$repo_path")
+find_git_root() {
+    local path="$1"
 
-        if repo_path_exists "$repo_path"; then
-            echo -e "${YELLOW}Warning: Duplicate project path filtered: $repo_path${NC}"
+    while [ "$path" != "/" ] && [ -n "$path" ]; do
+        if [ -d "$path/.git" ] || [ -f "$path/.git" ]; then
+            printf '%s\n' "$path"
+            return 0
+        fi
+        path="$(dirname "$path")"
+    done
+
+    return 1
+}
+
+find_repos_under() {
+    local scan_root="$1"
+
+    find "$scan_root" -maxdepth "$SCAN_MAX_DEPTH" \( -type d -name ".git" -o -type f -name ".git" \) -print 2>/dev/null \
+        | while IFS= read -r git_marker; do
+            dirname "$git_marker"
+        done \
+        | sort -u
+}
+
+print_repo_candidates() {
+    local candidate=""
+    for candidate in "$@"; do
+        echo "  - $(basename "$candidate") ($candidate)"
+    done
+}
+
+add_repo_path() {
+    local repo_path="$1"
+
+    repo_path="$(normalize_path "$repo_path")"
+    if repo_path_exists "$repo_path"; then
+        echo -e "${YELLOW}Warning: Duplicate project path filtered: $repo_path${NC}"
+        return
+    fi
+
+    REPOS+=("$repo_path")
+    echo -e "  ${GREEN}✓${NC} Added: $(basename "$repo_path") ($repo_path)"
+}
+
+add_repo_candidates() {
+    local candidate=""
+
+    for candidate in "$@"; do
+        add_repo_path "$candidate"
+    done
+}
+
+process_repo_path() {
+    local raw_path="$1"
+    local normalized=""
+    local top_level=""
+    local candidate=""
+    local candidates=()
+
+    if [ -z "$raw_path" ]; then
+        echo -e "${YELLOW}Warning: empty repository path ignored${NC}"
+        return
+    fi
+
+    if [[ "$raw_path" != /* ]]; then
+        echo -e "${YELLOW}Warning: Please enter an absolute path: $raw_path${NC}"
+        return
+    fi
+
+    if [ ! -d "$raw_path" ]; then
+        echo -e "${YELLOW}Warning: Directory does not exist: $raw_path${NC}"
+        return
+    fi
+
+    normalized="$(normalize_path "$raw_path")"
+    top_level="$(find_git_root "$normalized" || true)"
+    if [ -n "$top_level" ]; then
+        if [ "$top_level" != "$normalized" ]; then
+            echo -e "${YELLOW}Warning: $normalized is inside a git repository; using repository root $top_level${NC}"
+        fi
+        add_repo_path "$top_level"
+        return
+    fi
+
+    echo -e "${YELLOW}Warning: $normalized is not a git repository. Scanning beneath it for repositories.${NC}"
+    while IFS= read -r candidate; do
+        [ -n "$candidate" ] && candidates+=("$candidate")
+    done < <(find_repos_under "$normalized")
+
+    if [ "${#candidates[@]}" -eq 0 ]; then
+        echo -e "${YELLOW}Warning: no git repositories detected beneath $normalized${NC}"
+        return
+    fi
+
+    echo "Detected repositories under $normalized:"
+    print_repo_candidates "${candidates[@]}"
+    if [ "$YES" -eq 1 ] || confirm_yes_no "Add all detected repositories?" "yes"; then
+        add_repo_candidates "${candidates[@]}"
+    else
+        echo "Skipped detected repositories under $normalized"
+    fi
+}
+
+select_scan_depth_interactive() {
+    local depth=""
+    local option=""
+
+    if can_use_interactive_menu; then
+        MENU_LABELS=("$SCAN_MAX_DEPTH (default)")
+        MENU_VALUES=("$SCAN_MAX_DEPTH")
+        MENU_ENABLED=(1)
+        MENU_ROW_DETECTED=(0)
+        for option in 1 2 3 4 5; do
+            if [ "$option" != "$SCAN_MAX_DEPTH" ]; then
+                MENU_LABELS+=("$option")
+                MENU_VALUES+=("$option")
+                MENU_ENABLED+=(1)
+                MENU_ROW_DETECTED+=(0)
+            fi
+        done
+        MENU_LABELS+=("Custom depth")
+        MENU_VALUES+=("custom")
+        MENU_ENABLED+=(1)
+        MENU_ROW_DETECTED+=(0)
+        MENU_ALL_DETECTED_MODE=0
+        run_menu "Repository scan depth" "single" "Please select one scan depth."
+        if [ "$MENU_RESULT" != "custom" ]; then
+            SCAN_MAX_DEPTH="$MENU_RESULT"
+            return
+        fi
+    fi
+
+    while true; do
+        read_user_line "Repository scan depth [default: $SCAN_MAX_DEPTH]: "
+        depth="$REPLY"
+        if [ -z "$depth" ]; then
+            return
+        fi
+        case "$depth" in
+            *[!0-9]*|0)
+                echo "Invalid scan depth. Please enter a positive integer."
+                ;;
+            *)
+                SCAN_MAX_DEPTH="$depth"
+                return
+                ;;
+        esac
+    done
+}
+
+collect_auto_scan_repos() {
+    local scan_root="$SCAN_ROOT"
+    local candidate=""
+    local candidates=()
+    local depth_selected=0
+
+    while true; do
+        if [ -z "$scan_root" ]; then
+            if [ "$YES" -eq 1 ]; then
+                echo "Error: --auto-scan with --yes requires --scan-root PATH" >&2
+                exit 1
+            fi
+            read_user_line "Repository prefix directory to scan: "
+            scan_root="$REPLY"
+        fi
+
+        if [ ! -d "$scan_root" ]; then
+            echo -e "${RED}Directory does not exist: $scan_root${NC}"
+            scan_root=""
             continue
         fi
 
-        REPOS+=("$repo_path")
-        echo -e "  ${GREEN}✓${NC} Found: $repo_name ($repo_path)"
-    done < <(find "$scan_root" -maxdepth 5 -type d -name ".git" 2>/dev/null)
+        scan_root="$(normalize_path "$scan_root")"
+        if [ "$scan_root" = "/" ]; then
+            echo -e "${YELLOW}Warning: refusing to scan filesystem root. Choose a narrower repository prefix directory.${NC}"
+            scan_root=""
+            continue
+        fi
 
-    if [ "${#REPOS[@]}" -eq 0 ]; then
+        echo "Repository prefix directory: $scan_root"
+        if [ "$YES" -ne 1 ] && [ "$SCAN_DEPTH_CONFIGURED" -ne 1 ] && [ "$depth_selected" -eq 0 ]; then
+            select_scan_depth_interactive
+            depth_selected=1
+        fi
+        if [ "$YES" -eq 1 ] || confirm_yes_no "Scan this prefix for git repositories with max depth $SCAN_MAX_DEPTH?" "yes"; then
+            break
+        fi
+        scan_root=""
+        depth_selected=0
+    done
+
+    echo "Scanning for git repositories under $scan_root (max depth: $SCAN_MAX_DEPTH)..."
+    while IFS= read -r candidate; do
+        [ -n "$candidate" ] && candidates+=("$candidate")
+    done < <(find_repos_under "$scan_root")
+
+    if [ "${#candidates[@]}" -eq 0 ]; then
         echo -e "${YELLOW}No git repositories found.${NC}"
-    else
-        echo -e "${GREEN}Found ${#REPOS[@]} repositories${NC}"
+        return
     fi
-    echo ""
+
+    echo "Detected repositories:"
+    print_repo_candidates "${candidates[@]}"
+    if [ "$YES" -eq 1 ] || confirm_yes_no "Add all detected repositories?" "yes"; then
+        add_repo_candidates "${candidates[@]}"
+    else
+        echo "Skipped auto-scan repositories"
+    fi
 }
 
 manual_input() {
-    local repo_path
+    local repo_path=""
 
     echo "Manual project input..."
-    echo "Enter project paths (one per line, empty line to finish):"
-    echo ""
+    echo "Enter project paths one per line. If a path is not a git repository, AgentRepoRouter will scan beneath it."
+    echo "Submit an empty line to finish."
 
-    REPOS=()
     while true; do
         read_user_line "Path: "
         repo_path="$REPLY"
-        if [ -z "$repo_path" ]; then
-            break
-        fi
-
-        if [[ "$repo_path" != /* ]]; then
-            echo -e "${YELLOW}Warning: Please enter an absolute path: $repo_path${NC}"
-            continue
-        fi
-
-        if [ ! -d "$repo_path" ]; then
-            echo -e "${YELLOW}Warning: Directory does not exist: $repo_path${NC}"
-            continue
-        fi
-
-        repo_path=$(normalize_path "$repo_path")
-
-        if repo_path_exists "$repo_path"; then
-            echo -e "${YELLOW}Warning: Duplicate project path filtered: $repo_path${NC}"
-            continue
-        fi
-
-        REPOS+=("$repo_path")
-        echo -e "  ${GREEN}✓${NC} Added: $repo_path"
+        [ -n "$repo_path" ] || break
+        process_repo_path "$repo_path"
     done
 
     echo ""
 }
 
 discover_projects() {
-    local choice
+    local choice=""
+    local repo_arg=""
 
-    if can_use_interactive_menu; then
-        MENU_LABELS=("Auto scan (search for .git directories)" "Manual input")
-        MENU_VALUES=("auto" "manual")
-        MENU_ENABLED=(1 1)
-        MENU_ALL_DETECTED_MODE=0
-        run_menu "Project discovery" "single" "Please select one project discovery mode."
-        if [ "$MENU_RESULT" = "auto" ]; then
-            while ! auto_scan; do
-                :
-            done
-        else
-            manual_input
-        fi
+    for repo_arg in ${REPO_ARGS[@]+"${REPO_ARGS[@]}"}; do
+        process_repo_path "$repo_arg"
+    done
+
+    if [ "$AUTO_SCAN" -eq 1 ]; then
+        collect_auto_scan_repos
+    fi
+
+    if [ "${#REPOS[@]}" -gt 0 ]; then
         return
     fi
 
-    echo "Project discovery:"
-    echo "  [1] Auto scan (search for .git directories)"
-    echo "  [2] Manual input"
-    echo ""
+    if [ "$YES" -eq 1 ]; then
+        echo "Error: no repositories selected. Use --repo PATH or --auto-scan --scan-root PATH." >&2
+        exit 1
+    fi
 
-    while true; do
+    while [ "${#REPOS[@]}" -eq 0 ]; do
+        if can_use_interactive_menu; then
+            MENU_LABELS=("Auto scan (search for .git directories)" "Manual input")
+            MENU_VALUES=("auto" "manual")
+            MENU_ENABLED=(1 1)
+            MENU_ALL_DETECTED_MODE=0
+            run_menu "Project discovery" "single" "Please select one project discovery mode."
+            case "$MENU_RESULT" in
+                auto) collect_auto_scan_repos ;;
+                manual) manual_input ;;
+            esac
+            continue
+        fi
+
+        echo "Project discovery:"
+        echo "  [1] Auto scan (search for .git directories)"
+        echo "  [2] Manual input"
+        echo ""
         read_user_line "Enter choice [1-2]: "
         choice="$REPLY"
         case $choice in
-            1)
-                if auto_scan; then
-                    break
-                fi
-                ;;
-            2)
-                manual_input
-                break
-                ;;
-            *)
-                echo -e "${RED}Invalid choice. Please try again.${NC}"
-                ;;
+            1) collect_auto_scan_repos ;;
+            2) manual_input ;;
+            *) echo -e "${RED}Invalid choice. Please try again.${NC}" ;;
         esac
     done
 }
@@ -1065,57 +1589,184 @@ next_backup_dir() {
     done
 }
 
-handle_existing_link_target() {
-    local target_path="$1"
-    local backup_dir=""
+path_exists() {
+    [ -e "$1" ] || [ -L "$1" ]
+}
+
+select_existing_action() {
+    local label="$1"
+    local target_path="$2"
     local choice=""
 
-    if [ -L "$target_path" ]; then
-        rm -f "$target_path"
+    SELECTED_EXISTING_ACTION=""
+    if [ "$EXISTING_ARG_SET" -eq 1 ] || [ "$YES" -eq 1 ]; then
+        SELECTED_EXISTING_ACTION="$EXISTING"
         return
     fi
 
-    if [ ! -e "$target_path" ]; then
-        return
-    fi
-
-    echo "Existing install target detected: $target_path"
+    echo "Existing $label detected: $target_path"
 
     if can_use_interactive_menu; then
-        MENU_LABELS=("Delete and replace with symlink" "Backup existing target")
-        MENU_VALUES=("delete" "backup")
-        MENU_ENABLED=(1 1)
+        MENU_LABELS=("Backup existing target" "Overwrite existing target" "Skip install")
+        MENU_VALUES=("backup" "overwrite" "skip")
+        MENU_ENABLED=(1 1 1)
         MENU_ALL_DETECTED_MODE=0
         run_menu "Install target already exists" "single" "Please choose how to handle the existing target."
-        choice="$MENU_RESULT"
-    else
-        echo "Install target already exists:"
-        echo "  [1] Delete and replace with symlink"
-        echo "  [2] Backup existing target"
-        echo ""
-        while true; do
-            read_user_line "Enter choice [1-2]: "
-            choice="$REPLY"
-            case $choice in
-                1) choice="delete"; break ;;
-                2) choice="backup"; break ;;
-                *) echo -e "${RED}Invalid choice. Please try again.${NC}" ;;
-            esac
-        done
+        SELECTED_EXISTING_ACTION="$MENU_RESULT"
+        return
     fi
 
-    case "$choice" in
-        delete)
+    echo "Install target already exists:"
+    echo "  [1] Overwrite existing target"
+    echo "  [2] Backup existing target"
+    echo "  [3] Skip install"
+    echo ""
+    while true; do
+        read_user_line "Enter choice [1-3, default 2]: "
+        choice="$REPLY"
+        case $choice in
+            1) SELECTED_EXISTING_ACTION="overwrite"; return ;;
+            ""|2) SELECTED_EXISTING_ACTION="backup"; return ;;
+            3) SELECTED_EXISTING_ACTION="skip"; return ;;
+            *) echo -e "${RED}Invalid choice. Please try again.${NC}" ;;
+        esac
+    done
+}
+
+prepare_existing_path() {
+    local target_path="$1"
+    local label="$2"
+    local backup_dir=""
+    local action=""
+
+    if ! path_exists "$target_path"; then
+        return 0
+    fi
+
+    if get_recorded_existing_action "$target_path"; then
+        action="$SELECTED_EXISTING_ACTION"
+    else
+        select_existing_action "$label" "$target_path"
+        action="$SELECTED_EXISTING_ACTION"
+    fi
+    case "$action" in
+        overwrite)
             rm -rf "$target_path"
-            echo -e "${GREEN}✓ Deleted existing target${NC}"
+            echo -e "${GREEN}✓ Overwrote existing $label${NC}"
             ;;
         backup)
             backup_dir="$(next_backup_dir "$target_path")"
             mv "$target_path" "$backup_dir"
-            echo -e "${GREEN}✓ Backed up existing target to $backup_dir${NC}"
+            echo -e "${GREEN}✓ Backed up existing $label to $backup_dir${NC}"
+            ;;
+        skip)
+            echo "Skipping install because $label already exists: $target_path"
+            return 1
             ;;
     esac
     echo ""
+    return 0
+}
+
+reset_existing_decisions() {
+    EXISTING_DECISION_PATHS=()
+    EXISTING_DECISION_ACTIONS=()
+}
+
+record_existing_decision() {
+    local target_path="$1"
+    local action="$2"
+
+    EXISTING_DECISION_PATHS+=("$target_path")
+    EXISTING_DECISION_ACTIONS+=("$action")
+}
+
+get_recorded_existing_action() {
+    local target_path="$1"
+    local index=0
+
+    SELECTED_EXISTING_ACTION=""
+    for index in "${!EXISTING_DECISION_PATHS[@]}"; do
+        if [ "${EXISTING_DECISION_PATHS[$index]}" = "$target_path" ]; then
+            SELECTED_EXISTING_ACTION="${EXISTING_DECISION_ACTIONS[$index]}"
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+plan_existing_target() {
+    local target_path="$1"
+    local label="$2"
+    local action=""
+
+    if ! path_exists "$target_path"; then
+        return 0
+    fi
+
+    select_existing_action "$label" "$target_path"
+    action="$SELECTED_EXISTING_ACTION"
+    if [ "$action" = "skip" ]; then
+        echo "Skipping install because $label already exists: $target_path"
+        return 1
+    fi
+
+    record_existing_decision "$target_path" "$action"
+    return 0
+}
+
+prepare_install_dir() {
+    local target_path="$1"
+    local label="$2"
+
+    if ! prepare_existing_path "$target_path" "$label"; then
+        return 1
+    fi
+    mkdir -p "$target_path"
+}
+
+prepare_link_target() {
+    local target_path="$1"
+
+    if [ -L "$target_path" ] && [ "$(readlink "$target_path")" = "$CANONICAL_SKILL_DIR" ]; then
+        rm -f "$target_path"
+        return 0
+    fi
+
+    if ! prepare_existing_path "$target_path" "host skill target"; then
+        return 1
+    fi
+    mkdir -p "$(dirname "$target_path")"
+}
+
+preflight_existing_targets() {
+    local host_name=""
+    local host_dir=""
+
+    reset_existing_decisions
+    if ! plan_existing_target "$INSTALL_TARGET_DIR" "$INSTALL_MODE install target"; then
+        return 1
+    fi
+
+    if [ "$INSTALL_STRATEGY" != "symlink" ]; then
+        return 0
+    fi
+
+    for host_name in ${SELECTED_INSTALL_HOSTS[@]+"${SELECTED_INSTALL_HOSTS[@]}"}; do
+        host_dir="$(get_host_dir "$host_name")"
+        if [ "$host_dir" = "$CANONICAL_SKILL_DIR" ]; then
+            continue
+        fi
+        if [ -L "$host_dir" ] && [ "$(readlink "$host_dir")" = "$CANONICAL_SKILL_DIR" ]; then
+            continue
+        fi
+        if ! plan_existing_target "$host_dir" "host skill target"; then
+            return 1
+        fi
+    done
+
+    return 0
 }
 
 resolve_install_strategy() {
@@ -1128,9 +1779,13 @@ resolve_install_strategy() {
         INSTALL_STRATEGY="symlink"
         INSTALL_TARGET_DIR="$CANONICAL_SKILL_DIR"
         CONFIG_INSTALL_HOSTS=("global")
-        for host_name in "${SELECTED_INSTALL_HOSTS[@]}"; do
+        for host_name in ${SELECTED_INSTALL_HOSTS[@]+"${SELECTED_INSTALL_HOSTS[@]}"}; do
             CONFIG_INSTALL_HOSTS+=("$host_name")
         done
+    elif [ "$INSTALL_MODE" = "custom" ]; then
+        INSTALL_STRATEGY="symlink"
+        INSTALL_TARGET_DIR="$CANONICAL_SKILL_DIR"
+        CONFIG_INSTALL_HOSTS=(${SELECTED_INSTALL_HOSTS[@]+"${SELECTED_INSTALL_HOSTS[@]}"})
     elif [ "$selected_count" -eq 1 ]; then
         INSTALL_STRATEGY="direct"
         INSTALL_TARGET_DIR="$(get_host_dir "${SELECTED_INSTALL_HOSTS[0]}")"
@@ -1139,7 +1794,7 @@ resolve_install_strategy() {
     else
         INSTALL_STRATEGY="symlink"
         INSTALL_TARGET_DIR="$CANONICAL_SKILL_DIR"
-        CONFIG_INSTALL_HOSTS=("${SELECTED_INSTALL_HOSTS[@]}")
+        CONFIG_INSTALL_HOSTS=(${SELECTED_INSTALL_HOSTS[@]+"${SELECTED_INSTALL_HOSTS[@]}"})
     fi
 
     CONFIG_PATH="$INSTALL_TARGET_DIR/references/repo_mappings.json"
@@ -1150,8 +1805,13 @@ prepare_install_targets() {
     local host_dir
 
     resolve_install_strategy
+    if ! preflight_existing_targets; then
+        exit 0
+    fi
 
-    mkdir -p "$INSTALL_TARGET_DIR"
+    if ! prepare_install_dir "$INSTALL_TARGET_DIR" "$INSTALL_MODE install target"; then
+        exit 0
+    fi
 
     if [ "$INSTALL_STRATEGY" != "symlink" ]; then
         echo -e "${GREEN}✓ Direct install target: $(display_path "$INSTALL_TARGET_DIR")${NC}"
@@ -1162,14 +1822,15 @@ prepare_install_targets() {
         return
     fi
 
-    for host_name in "${SELECTED_INSTALL_HOSTS[@]}"; do
+    for host_name in ${SELECTED_INSTALL_HOSTS[@]+"${SELECTED_INSTALL_HOSTS[@]}"}; do
         host_dir="$(get_host_dir "$host_name")"
         if [ "$host_dir" = "$CANONICAL_SKILL_DIR" ]; then
             echo -e "${GREEN}✓ $(get_host_label "$host_name") uses canonical install target $(display_path "$CANONICAL_SKILL_DIR")${NC}"
             continue
         fi
-        mkdir -p "$(dirname "$host_dir")"
-        handle_existing_link_target "$host_dir"
+        if ! prepare_link_target "$host_dir"; then
+            exit 0
+        fi
         ln -s "$CANONICAL_SKILL_DIR" "$host_dir"
         echo -e "${GREEN}✓ Linked $(get_host_label "$host_name") to $CANONICAL_SKILL_DIR${NC}"
     done
@@ -1405,7 +2066,7 @@ deploy_skill() {
     guide_zh_local="$script_dir/../skills/$SKILL_SLUG/references/guide.zh.md"
     guide_en_local="$script_dir/../skills/$SKILL_SLUG/references/guide.en.md"
 
-    if agent_repo_router_use_local_cache && [ -f "$skill_zh_local" ]; then
+    if should_use_local_file "$skill_zh_local"; then
         skill_src_zh="$skill_zh_local"
     else
         tmp_skill_zh="$(mktemp)"
@@ -1416,7 +2077,7 @@ deploy_skill() {
         skill_src_zh="$tmp_skill_zh"
     fi
 
-    if agent_repo_router_use_local_cache && [ -f "$skill_en_local" ]; then
+    if should_use_local_file "$skill_en_local"; then
         skill_src_en="$skill_en_local"
     else
         tmp_skill_en="$(mktemp)"
@@ -1427,7 +2088,7 @@ deploy_skill() {
         skill_src_en="$tmp_skill_en"
     fi
 
-    if agent_repo_router_use_local_cache && [ -f "$guide_zh_local" ]; then
+    if should_use_local_file "$guide_zh_local"; then
         guide_src_zh="$guide_zh_local"
     else
         tmp_guide_zh="$(mktemp)"
@@ -1439,7 +2100,7 @@ deploy_skill() {
         fi
     fi
 
-    if agent_repo_router_use_local_cache && [ -f "$guide_en_local" ]; then
+    if should_use_local_file "$guide_en_local"; then
         guide_src_en="$guide_en_local"
     else
         tmp_guide_en="$(mktemp)"
@@ -1487,6 +2148,7 @@ main() {
     echo "=========================================="
     echo ""
 
+    parse_args "$@"
     check_environment
     select_language
     select_install_mode
