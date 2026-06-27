@@ -45,7 +45,7 @@
    - 可用 `--scan-depth N` 或 `AGENT_REPO_ROUTER_SCAN_MAX_DEPTH=N` 调整
    - `--repo` 指向 git repo 内部时会归一到 repo root
    - `--repo` 指向非 git 目录时按扫描深度查找 `.git` 目录或 `.git` 文件
-8. 处理已有安装目标；默认 `--existing backup` 会备份旧 install target，不自动 merge 旧 `repo_mappings.json`
+8. 处理已有安装目标；默认 `--existing backup` 会把真实旧 target 移到 `${TMPDIR:-/tmp}/agent-repo-router-skill-backups/install-*`，symlink 安装入口只重建，不自动 merge 旧 `repo_mappings.json`
 9. 生成 schema v2 `repo_mappings.json`
 10. 部署选中的 Router Skill
 

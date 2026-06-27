@@ -65,6 +65,8 @@ MENU_ALL_DETECTED_MODE=0
 SELECTED_EXISTING_ACTION=""
 EXISTING_DECISION_PATHS=()
 EXISTING_DECISION_ACTIONS=()
+BACKUP_ROOT=""
+BACKUP_OCCURRED=0
 
 usage() {
     cat >&2 <<'EOF'
@@ -1574,23 +1576,39 @@ discover_projects() {
     done
 }
 
-next_backup_dir() {
-    local target_path="$1"
-    local backup_index=0
-    local backup_dir=""
-
-    while true; do
-        backup_dir="${target_path}_backup_${backup_index}"
-        if [ ! -e "$backup_dir" ] && [ ! -L "$backup_dir" ]; then
-            echo "$backup_dir"
-            return 0
-        fi
-        backup_index=$((backup_index + 1))
-    done
-}
-
 path_exists() {
     [ -e "$1" ] || [ -L "$1" ]
+}
+
+ensure_backup_root() {
+    local temp_base="${TMPDIR:-/tmp}"
+    local backup_base=""
+
+    if [ -n "$BACKUP_ROOT" ]; then
+        return
+    fi
+
+    temp_base="${temp_base%/}"
+    backup_base="$temp_base/agent-repo-router-skill-backups"
+    mkdir -p "$backup_base"
+    BACKUP_ROOT="$(mktemp -d "$backup_base/install-$(date +%Y%m%d-%H%M%S)-XXXXXXXX")"
+}
+
+next_backup_dir() {
+    local target_path="$1"
+    local source_label="$2"
+    local name="${source_label}-$(basename "$target_path")"
+    local backup_dir=""
+    local backup_index=0
+
+    ensure_backup_root
+    backup_dir="$BACKUP_ROOT/$name"
+    while path_exists "$backup_dir"; do
+        backup_index=$((backup_index + 1))
+        backup_dir="$BACKUP_ROOT/${name}_${backup_index}"
+    done
+
+    echo "$backup_dir"
 }
 
 select_existing_action() {
@@ -1636,8 +1654,10 @@ select_existing_action() {
 prepare_existing_path() {
     local target_path="$1"
     local label="$2"
+    local source_label="${3:-canonical}"
     local backup_dir=""
     local action=""
+    local link_target=""
 
     if ! path_exists "$target_path"; then
         return 0
@@ -1651,13 +1671,27 @@ prepare_existing_path() {
     fi
     case "$action" in
         overwrite)
-            rm -rf "$target_path"
-            echo -e "${GREEN}✓ Overwrote existing $label${NC}"
+            if [ -L "$target_path" ]; then
+                link_target="$(readlink "$target_path" 2>/dev/null || true)"
+                rm -f "$target_path"
+                echo -e "${GREEN}✓ Removed existing symlink $target_path -> $link_target${NC}"
+            else
+                rm -rf "$target_path"
+                echo -e "${GREEN}✓ Overwrote existing $label${NC}"
+            fi
             ;;
         backup)
-            backup_dir="$(next_backup_dir "$target_path")"
-            mv "$target_path" "$backup_dir"
-            echo -e "${GREEN}✓ Backed up existing $label to $backup_dir${NC}"
+            if [ -L "$target_path" ]; then
+                link_target="$(readlink "$target_path" 2>/dev/null || true)"
+                rm -f "$target_path"
+                echo -e "${GREEN}✓ Removed existing symlink $target_path -> $link_target${NC}"
+            else
+                ensure_backup_root
+                backup_dir="$(next_backup_dir "$target_path" "$source_label")"
+                mv "$target_path" "$backup_dir"
+                BACKUP_OCCURRED=1
+                echo -e "${GREEN}✓ Backed up existing $label to $backup_dir${NC}"
+            fi
             ;;
         skip)
             echo "Skipping install because $label already exists: $target_path"
@@ -1719,8 +1753,9 @@ plan_existing_target() {
 prepare_install_dir() {
     local target_path="$1"
     local label="$2"
+    local source_label="$3"
 
-    if ! prepare_existing_path "$target_path" "$label"; then
+    if ! prepare_existing_path "$target_path" "$label" "$source_label"; then
         return 1
     fi
     mkdir -p "$target_path"
@@ -1728,16 +1763,24 @@ prepare_install_dir() {
 
 prepare_link_target() {
     local target_path="$1"
+    local source_label="$2"
 
-    if [ -L "$target_path" ] && [ "$(readlink "$target_path")" = "$CANONICAL_SKILL_DIR" ]; then
-        rm -f "$target_path"
-        return 0
-    fi
-
-    if ! prepare_existing_path "$target_path" "host skill target"; then
+    if ! prepare_existing_path "$target_path" "host skill target" "$source_label"; then
         return 1
     fi
     mkdir -p "$(dirname "$target_path")"
+}
+
+print_backup_summary() {
+    if [ "$BACKUP_OCCURRED" -eq 0 ]; then
+        return
+    fi
+
+    echo ""
+    echo "Backups moved to:"
+    echo "  $BACKUP_ROOT"
+    echo "Temporary backups are stored under the system temp directory and may be removed by the operating system later."
+    echo ""
 }
 
 preflight_existing_targets() {
@@ -1756,9 +1799,6 @@ preflight_existing_targets() {
     for host_name in ${SELECTED_INSTALL_HOSTS[@]+"${SELECTED_INSTALL_HOSTS[@]}"}; do
         host_dir="$(get_host_dir "$host_name")"
         if [ "$host_dir" = "$CANONICAL_SKILL_DIR" ]; then
-            continue
-        fi
-        if [ -L "$host_dir" ] && [ "$(readlink "$host_dir")" = "$CANONICAL_SKILL_DIR" ]; then
             continue
         fi
         if ! plan_existing_target "$host_dir" "host skill target"; then
@@ -1803,13 +1843,18 @@ resolve_install_strategy() {
 prepare_install_targets() {
     local host_name
     local host_dir
+    local install_target_source_label="canonical"
 
     resolve_install_strategy
+    if [ "$INSTALL_TARGET_DIR" != "$CANONICAL_SKILL_DIR" ] && [ "$INSTALL_STRATEGY" = "direct" ] && [ "${#SELECTED_INSTALL_HOSTS[@]}" -eq 1 ]; then
+        install_target_source_label="${SELECTED_INSTALL_HOSTS[0]}"
+    fi
+
     if ! preflight_existing_targets; then
         exit 0
     fi
 
-    if ! prepare_install_dir "$INSTALL_TARGET_DIR" "$INSTALL_MODE install target"; then
+    if ! prepare_install_dir "$INSTALL_TARGET_DIR" "$INSTALL_MODE install target" "$install_target_source_label"; then
         exit 0
     fi
 
@@ -1828,7 +1873,7 @@ prepare_install_targets() {
             echo -e "${GREEN}✓ $(get_host_label "$host_name") uses canonical install target $(display_path "$CANONICAL_SKILL_DIR")${NC}"
             continue
         fi
-        if ! prepare_link_target "$host_dir"; then
+        if ! prepare_link_target "$host_dir" "$host_name"; then
             exit 0
         fi
         ln -s "$CANONICAL_SKILL_DIR" "$host_dir"
@@ -2157,6 +2202,7 @@ main() {
     prepare_install_targets
     generate_config
     deploy_skill
+    print_backup_summary
 
     echo "=========================================="
     echo -e "${GREEN}  Installation Complete!${NC}"

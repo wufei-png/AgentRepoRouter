@@ -2,6 +2,7 @@
 
 from testsupport import (
     PROJECT_ROOT,
+    backup_roots,
     deployed_config_path,
     deployed_host_path,
     deployed_host_skill_path,
@@ -188,9 +189,11 @@ def test_existing_real_host_directory_can_be_backed_up_before_symlink(tmp_path):
         with_fake_path(fake_bin),
     )
 
-    backup_dir = openclaw_dir.with_name("agent-repo-router_backup_0")
-
     assert result.returncode == 0, result.stdout + result.stderr
+    roots = backup_roots(home_dir)
+    assert len(roots) == 1
+    backup_dir = roots[0] / "openclaw-agent-repo-router"
     assert backup_dir.exists()
     assert (backup_dir / "old.txt").read_text() == "old-router"
     assert openclaw_dir.is_symlink()
+    assert not openclaw_dir.with_name("agent-repo-router_backup_0").exists()

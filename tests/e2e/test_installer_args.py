@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from testsupport import (
+    backup_roots,
     deployed_config_path,
     deployed_host_path,
     deployed_skill_path,
@@ -341,7 +342,11 @@ def test_existing_backup_skip_and_overwrite_for_install_target(tmp_path):
     (old_target / "old.txt").write_text("old")
     backup_result = run_install_args(backup_home, base_args(repo)[:-1] + ["backup"], env)
     assert backup_result.returncode == 0, backup_result.stdout + backup_result.stderr
-    assert (backup_home / ".agents" / "skills" / "agent-repo-router_backup_0" / "old.txt").exists()
+    roots = backup_roots(backup_home)
+    assert len(roots) == 1
+    assert (roots[0] / "canonical-agent-repo-router" / "old.txt").exists()
+    assert str(roots[0]) in backup_result.stdout
+    assert not (backup_home / ".agents" / "skills" / "agent-repo-router_backup_0").exists()
 
     skip_home = tmp_path / "skip-home"
     skip_target = skip_home / ".agents" / "skills" / "agent-repo-router"
@@ -389,8 +394,162 @@ def test_existing_backup_for_host_link_target(tmp_path):
     )
 
     assert result.returncode == 0, result.stdout + result.stderr
-    assert (home_dir / ".openclaw" / "skills" / "agent-repo-router_backup_0" / "old.txt").exists()
+    roots = backup_roots(home_dir)
+    assert len(roots) == 1
+    assert (roots[0] / "openclaw-agent-repo-router" / "old.txt").exists()
+    assert str(roots[0]) in result.stdout
+    assert not (home_dir / ".openclaw" / "skills" / "agent-repo-router_backup_0").exists()
     assert openclaw_target.is_symlink()
+
+
+def test_existing_canonical_and_host_directories_share_one_backup_root(tmp_path):
+    home_dir = tmp_path / "home"
+    repo = make_repo(tmp_path / "demo-repo")
+    canonical_target = deployed_skill_path(home_dir).parent
+    openclaw_target = deployed_host_path(home_dir, "openclaw")
+    canonical_target.mkdir(parents=True)
+    (canonical_target / "old-canonical.txt").write_text("old-canonical")
+    openclaw_target.mkdir(parents=True)
+    (openclaw_target / "old-openclaw.txt").write_text("old-openclaw")
+    fake_bin = make_fake_bin(tmp_path, {"node", "git", "openclaw", "claude"})
+
+    result = run_install_args(
+        home_dir,
+        [
+            "--yes",
+            "--repo",
+            str(repo),
+            "--install-mode",
+            "global",
+            "--hosts",
+            "openclaw",
+            "--execution-clis",
+            "claude-code",
+            "--existing",
+            "backup",
+        ],
+        with_fake_path(fake_bin),
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    roots = backup_roots(home_dir)
+    assert len(roots) == 1
+    assert (roots[0] / "canonical-agent-repo-router" / "old-canonical.txt").read_text() == "old-canonical"
+    assert (roots[0] / "openclaw-agent-repo-router" / "old-openclaw.txt").read_text() == "old-openclaw"
+    assert str(roots[0]) in result.stdout
+    assert openclaw_target.is_symlink()
+
+
+def test_existing_host_symlink_is_replaced_without_backup(tmp_path):
+    home_dir = tmp_path / "home"
+    repo = make_repo(tmp_path / "demo-repo")
+    openclaw_target = deployed_host_path(home_dir, "openclaw")
+    external_target = tmp_path / "external-router"
+    external_target.mkdir()
+    (external_target / "old.txt").write_text("old")
+    openclaw_target.parent.mkdir(parents=True)
+    openclaw_target.symlink_to(external_target)
+    fake_bin = make_fake_bin(tmp_path, {"node", "git", "openclaw", "claude"})
+
+    result = run_install_args(
+        home_dir,
+        [
+            "--yes",
+            "--repo",
+            str(repo),
+            "--install-mode",
+            "global",
+            "--hosts",
+            "openclaw",
+            "--execution-clis",
+            "claude-code",
+            "--existing",
+            "backup",
+        ],
+        with_fake_path(fake_bin),
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert openclaw_target.is_symlink()
+    assert openclaw_target.resolve() == deployed_skill_path(home_dir).parent
+    assert (external_target / "old.txt").read_text() == "old"
+    assert backup_roots(home_dir) == []
+
+
+def test_existing_skip_preserves_symlink_target(tmp_path):
+    home_dir = tmp_path / "home"
+    repo = make_repo(tmp_path / "demo-repo")
+    canonical_target = deployed_skill_path(home_dir).parent
+    external_target = tmp_path / "external-router"
+    external_target.mkdir()
+    (external_target / "old.txt").write_text("old")
+    canonical_target.parent.mkdir(parents=True)
+    canonical_target.symlink_to(external_target)
+    fake_bin = make_fake_bin(tmp_path, {"node", "git", "codex"})
+
+    result = run_install_args(
+        home_dir,
+        [
+            "--yes",
+            "--repo",
+            str(repo),
+            "--hosts",
+            "codex",
+            "--execution-clis",
+            "codex",
+            "--existing",
+            "skip",
+        ],
+        with_fake_path(fake_bin),
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert canonical_target.is_symlink()
+    assert canonical_target.resolve() == external_target
+    assert (external_target / "old.txt").read_text() == "old"
+    assert backup_roots(home_dir) == []
+
+
+def test_existing_skip_preserves_host_symlink_to_canonical_without_partial_install(tmp_path):
+    home_dir = tmp_path / "home"
+    repo = make_repo(tmp_path / "demo-repo")
+    canonical_target = deployed_skill_path(home_dir).parent
+    openclaw_target = deployed_host_path(home_dir, "openclaw")
+    openclaw_target.parent.mkdir(parents=True)
+    openclaw_target.symlink_to(canonical_target)
+    before_inode = openclaw_target.lstat().st_ino
+    before_link = openclaw_target.readlink()
+    fake_bin = make_fake_bin(tmp_path, {"node", "git", "openclaw", "claude"})
+
+    result = run_install_args(
+        home_dir,
+        [
+            "--yes",
+            "--repo",
+            str(repo),
+            "--install-mode",
+            "global",
+            "--hosts",
+            "openclaw",
+            "--execution-clis",
+            "claude-code",
+            "--existing",
+            "skip",
+        ],
+        with_fake_path(fake_bin),
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "Skipping install because host skill target already exists" in result.stdout
+    assert "Removed existing symlink" not in result.stdout
+    assert "Backups moved to:" not in result.stdout
+    assert "Installation Complete!" not in result.stdout
+    assert openclaw_target.is_symlink()
+    assert openclaw_target.lstat().st_ino == before_inode
+    assert openclaw_target.readlink() == before_link
+    assert not canonical_target.exists()
+    assert not deployed_config_path(home_dir).exists()
+    assert backup_roots(home_dir) == []
 
 
 def test_interactive_skip_preflight_avoids_partial_canonical_mutation(tmp_path):

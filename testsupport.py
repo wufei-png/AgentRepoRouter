@@ -50,6 +50,13 @@ def deployed_host_config_path(home_dir: Path, host: str) -> Path:
     return deployed_host_path(home_dir, host) / "references" / "repo_mappings.json"
 
 
+def backup_roots(home_dir: Path) -> list[Path]:
+    backup_base = home_dir / "tmp" / "agent-repo-router-skill-backups"
+    if not backup_base.exists():
+        return []
+    return sorted(backup_base.glob("install-*"))
+
+
 def load_deployed_config(home_dir: Path) -> dict:
     return json.loads(deployed_config_path(home_dir).read_text())
 
@@ -110,6 +117,7 @@ def run_install(
 ) -> subprocess.CompletedProcess[str]:
     env = os.environ.copy()
     env["HOME"] = str(home_dir)
+    env["TMPDIR"] = str(home_dir / "tmp")
     env.setdefault("AGENT_REPO_ROUTER_USE_LOCAL_CACHE", "true")
     if extra_env:
         env.update(extra_env)
@@ -135,6 +143,7 @@ def run_install_args(
 ) -> subprocess.CompletedProcess[str]:
     env = os.environ.copy()
     env["HOME"] = str(home_dir)
+    env["TMPDIR"] = str(home_dir / "tmp")
     env.setdefault("AGENT_REPO_ROUTER_USE_LOCAL_CACHE", "true")
     if extra_env:
         env.update(extra_env)

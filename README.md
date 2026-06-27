@@ -160,7 +160,10 @@ User
 - Non-interactive installs support `--yes`, `--language zh|en`, `--install-mode global|single|custom`, `--hosts`, `--execution-clis`, `--existing backup|skip|overwrite`, `--repo`, `--auto-scan`, and `--scan-root`.
 - `--hosts all` means all detected install hosts; if none are detected, the installer falls back to the Codex canonical target. Explicit host names are allowed even when the host CLI is not detected.
 - `--execution-clis all` means all detected execution CLIs in the fixed order `claude-code,opencode,cursor,codex,hermes`; explicitly listed execution CLIs must be installed.
-- Reinstalls default to `--existing backup`, which backs up the old install target and creates a fresh `repo_mappings.json` instead of merging aliases.
+- Reinstalls default to `--existing backup`, which moves real old install
+  targets under `${TMPDIR:-/tmp}/agent-repo-router-skill-backups/install-*`
+  and creates a fresh `repo_mappings.json` instead of merging aliases. Existing
+  symlink install targets are unlinked and recreated, not backed up.
 - The generated repo config includes `aliases`, detected project-level `skills`, and detected project-level `agents`.
 - The installer writes schema v2 `repo_mappings.json` with `installMode`, `installHosts`, and `executionClis`.
 - The repo includes unit, integration, and E2E tests plus opt-in live OpenClaw E2E coverage.
