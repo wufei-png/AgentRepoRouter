@@ -179,7 +179,7 @@ def manual_install_input(
 def auto_scan_input(
     language: str,
     clis: str,
-    scan_root: str,
+    scan_root: str | list[str],
     *,
     install_mode: str = "1",
     install_hosts: str | None = None,
@@ -187,7 +187,8 @@ def auto_scan_input(
     lines = [language, install_mode]
     if install_hosts is not None:
         lines.append(install_hosts)
-    lines.extend([clis, "1", scan_root])
+    scan_roots = [scan_root] if isinstance(scan_root, str) else scan_root
+    lines.extend([clis, "1", *scan_roots, ""])
     return "\n".join(lines) + "\n"
 
 

@@ -86,6 +86,42 @@ def test_auto_scan_respects_explicit_scan_depth(tmp_path):
     assert load_deployed_config(home_dir)["repos"][0]["path"] == str(repo)
 
 
+def test_auto_scan_accepts_multiple_scan_roots(tmp_path):
+    home_dir = tmp_path / "home"
+    scan_root_a = tmp_path / "scan-root-a"
+    scan_root_b = tmp_path / "scan-root-b"
+    repo_a = make_repo(scan_root_a / "team-a" / "demo-a")
+    repo_b = make_repo(scan_root_b / "team-b" / "demo-b")
+    fake_bin = make_fake_bin(tmp_path, {"node", "git", "codex"})
+
+    result = run_install_args(
+        home_dir,
+        [
+            "--yes",
+            "--auto-scan",
+            "--scan-root",
+            str(scan_root_a),
+            "--scan-root",
+            str(scan_root_b),
+            "--scan-depth",
+            "3",
+            "--hosts",
+            "codex",
+            "--execution-clis",
+            "codex",
+            "--existing",
+            "overwrite",
+        ],
+        with_fake_path(fake_bin),
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert {repo["path"] for repo in load_deployed_config(home_dir)["repos"]} == {
+        str(repo_a),
+        str(repo_b),
+    }
+
+
 def test_auto_scan_default_depth_is_five(tmp_path):
     home_dir = tmp_path / "home"
     scan_root = tmp_path / "scan-root"

@@ -32,7 +32,7 @@ EXECUTION_CLIS_ARG_SET=0
 EXISTING="backup"
 EXISTING_ARG_SET=0
 AUTO_SCAN=0
-SCAN_ROOT=""
+SCAN_ROOTS=()
 REPO_ARGS=()
 
 TTY_FD=9
@@ -72,7 +72,7 @@ usage() {
     cat >&2 <<'EOF'
 Usage:
   install.sh [--yes] --repo PATH [--repo PATH ...] [--language zh|en] [--install-mode global|single|custom] [--hosts all|openclaw,claude-code,opencode,codex,hermes] [--execution-clis all|claude-code,opencode,cursor,codex,hermes] [--existing backup|skip|overwrite] [--scan-depth N]
-  install.sh [--yes] --auto-scan --scan-root PATH [--scan-depth N] [--language zh|en] [--install-mode global|single|custom] [--hosts all|openclaw,claude-code,opencode,codex,hermes] [--execution-clis all|claude-code,opencode,cursor,codex,hermes] [--existing backup|skip|overwrite]
+  install.sh [--yes] --auto-scan --scan-root PATH [--scan-root PATH ...] [--scan-depth N] [--language zh|en] [--install-mode global|single|custom] [--hosts all|openclaw,claude-code,opencode,codex,hermes] [--execution-clis all|claude-code,opencode,cursor,codex,hermes] [--existing backup|skip|overwrite]
   install.sh
 
 Pipe install:
@@ -114,7 +114,7 @@ parse_args() {
                 ;;
             --scan-root)
                 require_arg "$1" "${2:-}"
-                SCAN_ROOT="$2"
+                SCAN_ROOTS+=("$2")
                 shift 2
                 ;;
             --scan-depth)
@@ -1451,53 +1451,71 @@ select_scan_depth_interactive() {
 }
 
 collect_auto_scan_repos() {
-    local scan_root="$SCAN_ROOT"
+    local raw_scan_root=""
+    local scan_root=""
     local candidate=""
     local candidates=()
+    local raw_scan_roots=()
+    local valid_scan_roots=()
     local depth_selected=0
 
-    while true; do
-        if [ -z "$scan_root" ]; then
-            if [ "$YES" -eq 1 ]; then
-                echo "Error: --auto-scan with --yes requires --scan-root PATH" >&2
-                exit 1
-            fi
-            read_user_line "Repository prefix directory to scan: "
-            scan_root="$REPLY"
+    if [ "${#SCAN_ROOTS[@]}" -gt 0 ]; then
+        raw_scan_roots=("${SCAN_ROOTS[@]}")
+    else
+        if [ "$YES" -eq 1 ]; then
+            echo "Error: --auto-scan with --yes requires --scan-root PATH" >&2
+            exit 1
         fi
+        echo "Enter repository prefix directories to scan, one per line."
+        echo "Submit an empty line to finish."
+        while true; do
+            read_user_line "Repository prefix directory to scan: "
+            raw_scan_root="$REPLY"
+            [ -n "$raw_scan_root" ] || break
+            raw_scan_roots+=("$raw_scan_root")
+        done
+    fi
 
-        if [ ! -d "$scan_root" ]; then
-            echo -e "${RED}Directory does not exist: $scan_root${NC}"
-            scan_root=""
+    for raw_scan_root in "${raw_scan_roots[@]}"; do
+        if [ ! -d "$raw_scan_root" ]; then
+            echo -e "${RED}Directory does not exist: $raw_scan_root${NC}"
             continue
         fi
 
-        scan_root="$(normalize_path "$scan_root")"
+        scan_root="$(normalize_path "$raw_scan_root")"
         if [ "$scan_root" = "/" ]; then
             echo -e "${YELLOW}Warning: refusing to scan filesystem root. Choose a narrower repository prefix directory.${NC}"
-            scan_root=""
             continue
         fi
 
-        echo "Repository prefix directory: $scan_root"
-        if [ "$YES" -ne 1 ] && [ "$SCAN_DEPTH_CONFIGURED" -ne 1 ] && [ "$depth_selected" -eq 0 ]; then
-            select_scan_depth_interactive
-            depth_selected=1
-        fi
-        if [ "$YES" -eq 1 ] || confirm_yes_no "Scan this prefix for git repositories with max depth $SCAN_MAX_DEPTH?" "yes"; then
-            break
-        fi
-        scan_root=""
-        depth_selected=0
+        valid_scan_roots+=("$scan_root")
     done
 
-    echo "Scanning for git repositories under $scan_root (max depth: $SCAN_MAX_DEPTH)..."
-    while IFS= read -r candidate; do
-        [ -n "$candidate" ] && candidates+=("$candidate")
-    done < <(find_repos_under "$scan_root")
+    if [ "${#valid_scan_roots[@]}" -eq 0 ]; then
+        echo -e "${YELLOW}No valid repository prefix directories selected for auto scan.${NC}"
+        return
+    fi
+
+    echo "Repository prefix directories:"
+    print_repo_candidates "${valid_scan_roots[@]}"
+    if [ "$YES" -ne 1 ] && [ "$SCAN_DEPTH_CONFIGURED" -ne 1 ] && [ "$depth_selected" -eq 0 ]; then
+        select_scan_depth_interactive
+        depth_selected=1
+    fi
+    if [ "$YES" -ne 1 ] && ! confirm_yes_no "Scan selected prefixes for git repositories with max depth $SCAN_MAX_DEPTH?" "yes"; then
+        echo "Skipped auto-scan repositories"
+        return
+    fi
+
+    for scan_root in "${valid_scan_roots[@]}"; do
+        echo "Scanning for git repositories under $scan_root (max depth: $SCAN_MAX_DEPTH)..."
+        while IFS= read -r candidate; do
+            [ -n "$candidate" ] && candidates+=("$candidate")
+        done < <(find_repos_under "$scan_root")
+    done
 
     if [ "${#candidates[@]}" -eq 0 ]; then
-        echo -e "${YELLOW}No git repositories found.${NC}"
+        echo -e "${YELLOW}No git repositories found beneath selected scan roots.${NC}"
         return
     fi
 

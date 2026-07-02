@@ -46,6 +46,28 @@ def test_auto_scan_preserves_repos_with_duplicate_names(tmp_path):
     assert all(repo["agents"] == {} for repo in deployed_config["repos"])
 
 
+def test_interactive_auto_scan_accepts_multiple_roots(tmp_path):
+    home_dir = tmp_path / "home"
+    scan_root_a = tmp_path / "scan-root-a"
+    scan_root_b = tmp_path / "scan-root-b"
+    fake_bin = make_fake_bin(tmp_path, {"node", "git", "claude"})
+
+    (scan_root_a / "docs-a" / ".git").mkdir(parents=True)
+    (scan_root_b / "docs-b" / ".git").mkdir(parents=True)
+
+    result = run_install(
+        home_dir,
+        auto_scan_input("1", "1", [str(scan_root_a), str(scan_root_b)]),
+        with_fake_path(fake_bin),
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert {repo["path"] for repo in load_deployed_config(home_dir)["repos"]} == {
+        str((scan_root_a / "docs-a").resolve()),
+        str((scan_root_b / "docs-b").resolve()),
+    }
+
+
 def test_manual_input_rejects_relative_paths_and_keeps_absolute_paths(tmp_path):
     home_dir = tmp_path / "home"
     fake_bin = make_fake_bin(tmp_path, {"node", "git", "claude"})

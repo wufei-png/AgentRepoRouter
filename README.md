@@ -129,7 +129,10 @@ bash scripts/install.sh
 bash scripts/install.sh --yes --language zh --repo /absolute/path/to/repo --hosts codex --execution-clis codex
 
 # Non-interactive install by scanning a repository prefix
-bash scripts/install.sh --yes --auto-scan --scan-root /absolute/path/to/repos --scan-depth 5 --hosts all --execution-clis all
+bash scripts/install.sh --yes --auto-scan \
+  --scan-root /absolute/path/to/repos-a \
+  --scan-root /absolute/path/to/repos-b \
+  --scan-depth 5 --hosts all --execution-clis all
 
 # Review repo aliases and detected project assets
 vim ~/.agents/skills/agent-repo-router/references/repo_mappings.json
@@ -156,8 +159,8 @@ User
 - Default install mode is global: write once to `~/.agents/skills/agent-repo-router` and symlink detected hosts.
 - Single-host mode installs directly into the selected host skill directory.
 - Custom-host mode writes the canonical global copy and symlinks selected hosts.
-- Project discovery supports auto scan, repeated `--repo` arguments, manual absolute paths, and configurable scan depth. Auto scan defaults to depth `5`; scripts can use `--scan-depth N` or `AGENT_REPO_ROUTER_SCAN_MAX_DEPTH=N`.
-- Non-interactive installs support `--yes`, `--language zh|en`, `--install-mode global|single|custom`, `--hosts`, `--execution-clis`, `--existing backup|skip|overwrite`, `--repo`, `--auto-scan`, and `--scan-root`.
+- Project discovery supports auto scan, repeated `--repo` arguments, manual absolute paths, and configurable scan depth. Auto scan accepts multiple repository prefixes, defaults to depth `5`, and scripts can use `--scan-depth N` or `AGENT_REPO_ROUTER_SCAN_MAX_DEPTH=N`.
+- Non-interactive installs support `--yes`, `--language zh|en`, `--install-mode global|single|custom`, `--hosts`, `--execution-clis`, `--existing backup|skip|overwrite`, `--repo`, `--auto-scan`, and repeated `--scan-root`.
 - `--hosts all` means all detected install hosts; if none are detected, the installer falls back to the Codex canonical target. Explicit host names are allowed even when the host CLI is not detected.
 - `--execution-clis all` means all detected execution CLIs in the fixed order `claude-code,opencode,cursor,codex,hermes`; explicitly listed execution CLIs must be installed.
 - Reinstalls default to `--existing backup`, which moves real old install

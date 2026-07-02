@@ -127,7 +127,10 @@ bash scripts/install.sh
 bash scripts/install.sh --yes --language zh --repo /absolute/path/to/repo --hosts codex --execution-clis codex
 
 # 扫描仓库前缀目录进行非交互安装
-bash scripts/install.sh --yes --auto-scan --scan-root /absolute/path/to/repos --scan-depth 5 --hosts all --execution-clis all
+bash scripts/install.sh --yes --auto-scan \
+  --scan-root /absolute/path/to/repos-a \
+  --scan-root /absolute/path/to/repos-b \
+  --scan-depth 5 --hosts all --execution-clis all
 
 # 查看仓库别名与检测到的项目资产
 vim ~/.agents/skills/agent-repo-router/references/repo_mappings.json
@@ -154,8 +157,8 @@ openclaw
 - 默认安装模式为 Global：写入 `~/.agents/skills/agent-repo-router`，并软链接所有检测到的 host。
 - Single host 模式直接安装到单个 host 的 skill 目录。
 - Custom hosts 模式写入全局规范路径，并软链接选中的 host。
-- 项目发现支持自动扫描、重复 `--repo` 参数、手动绝对路径输入和可配置扫描深度。自动扫描默认深度为 `5`；脚本可使用 `--scan-depth N` 或 `AGENT_REPO_ROUTER_SCAN_MAX_DEPTH=N`。
-- 非交互安装支持 `--yes`、`--language zh|en`、`--install-mode global|single|custom`、`--hosts`、`--execution-clis`、`--existing backup|skip|overwrite`、`--repo`、`--auto-scan` 与 `--scan-root`。
+- 项目发现支持自动扫描、重复 `--repo` 参数、手动绝对路径输入和可配置扫描深度。自动扫描支持多个仓库前缀，默认深度为 `5`；脚本可使用 `--scan-depth N` 或 `AGENT_REPO_ROUTER_SCAN_MAX_DEPTH=N`。
+- 非交互安装支持 `--yes`、`--language zh|en`、`--install-mode global|single|custom`、`--hosts`、`--execution-clis`、`--existing backup|skip|overwrite`、`--repo`、`--auto-scan` 与重复 `--scan-root`。
 - `--hosts all` 表示所有检测到的安装 host；如果没有检测到 host，安装器会回退到 Codex 的 canonical 目标。显式写出的 host 即使未检测到 CLI 也允许创建目录。
 - `--execution-clis all` 表示按固定顺序 `claude-code,opencode,cursor,codex,hermes` 选择所有检测到的执行 CLI；显式写出的执行 CLI 必须已安装。
 - 重新安装默认使用 `--existing backup`，会备份旧 install target 并生成新的 `repo_mappings.json`，不会自动 merge 旧 aliases。
