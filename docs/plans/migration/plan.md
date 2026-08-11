@@ -165,8 +165,8 @@ install.sh
 │   └── 包含 installMode、installHosts、executionClis 顺序和 repos 列表
 │
 └── 6. 部署 Router Skill
-    ├── 选择中文 → 复制 SKILL.zh.md 为 SKILL.md，删除 SKILL.en.md
-    └── 选择英文 → 复制 SKILL.en.md 为 SKILL.md，删除 SKILL.zh.md
+    ├── 选择中文 → 复制 SKILL.zh.md 为 SKILL.md
+    └── 选择英文 → 使用默认 SKILL.md，删除 SKILL.zh.md
 ```
 
 ### 生成的 repo_mappings.json
@@ -241,13 +241,13 @@ OpenClaw Skill 负责运行时路由和执行。
 
 ```
 skills/agent-repo-router/
-├── SKILL.zh.md        # 中文版
-├── SKILL.en.md        # 英文版
+├── SKILL.md           # 英文默认版
+├── SKILL.zh.md        # 中文安装模板
 └── references/
     └── repo_mappings.json
 ```
 
-> 安装时根据用户选择，将对应语言的文件 rename 为 `SKILL.md`，删除另一个。
+> 安装时英文直接使用 `SKILL.md`；中文将 `SKILL.zh.md` 部署为运行时 `SKILL.md`。
 
 ### SKILL.md 内容
 
@@ -362,8 +362,8 @@ cd /path/to/repo && opencode run "use skill <skill-name> to solve: task descript
 
 ### 待完成
 
+- [ ] 创建 `skills/agent-repo-router/SKILL.md`
 - [ ] 创建 `skills/agent-repo-router/SKILL.zh.md`
-- [ ] 创建 `skills/agent-repo-router/SKILL.en.md`
 - [ ] 创建 `skills/agent-repo-router/references/` 目录
 - [ ] 维护 `references/repo_mappings.json` 作为唯一配置样板
 
@@ -474,7 +474,7 @@ skills/agent-repo-router/router.py  # 依赖 legacy-python-runtime/，需删除
 tests/                    # 测试用例
 legacy/config/            # 配置示例（参考用）
 skills/agent-repo-router/SKILL.zh.md # Router Skill (中文模板)
-skills/agent-repo-router/SKILL.en.md # Router Skill (英文模板)
+skills/agent-repo-router/SKILL.md    # Router Skill (英文默认)
 skills/agent-repo-router/references/  # 配置文件
 ```
 
@@ -590,7 +590,7 @@ legacy/docs/plans/migration/OLD-plan.md  # 原 plan.md
 tests/
 legacy/config/
 skills/agent-repo-router/SKILL.zh.md
-skills/agent-repo-router/SKILL.en.md
+skills/agent-repo-router/SKILL.md
 skills/agent-repo-router/references/
 ```
 
@@ -599,7 +599,7 @@ skills/agent-repo-router/references/
 ## 执行顺序
 
 1. ⬜ 重写 `install.sh`
-2. ⬜ 创建 `skills/agent-repo-router/SKILL.zh.md` 和 `skills/agent-repo-router/SKILL.en.md`
+2. ⬜ 创建 `skills/agent-repo-router/SKILL.md` 和 `skills/agent-repo-router/SKILL.zh.md`
 3. ⬜ 创建 `skills/agent-repo-router/references/repo_mappings.json`
 4. ⬜ 创建测试仓库 `tests/repos/`
 5. ⬜ 更新文档

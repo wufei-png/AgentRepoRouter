@@ -392,7 +392,7 @@ def temporary_router_skill_override(
         shutil.move(str(workspace_skill_dir), str(backup_dir))
 
     try:
-        template_name = "SKILL.zh.md" if language == "zh" else "SKILL.en.md"
+        template_name = "SKILL.zh.md" if language == "zh" else "SKILL.md"
         template_path = PROJECT_ROOT / "skills" / SKILL_SLUG / template_name
         references_dir = PROJECT_ROOT / "skills" / SKILL_SLUG / "references"
 

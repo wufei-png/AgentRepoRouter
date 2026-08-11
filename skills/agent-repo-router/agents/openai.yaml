@@ -1,0 +1,7 @@
+interface:
+  display_name: "Agent Repo Router"
+  short_description: "Route coding tasks to the right repository and CLI"
+  default_prompt: "Use $agent-repo-router to route this coding task to the right repository, project skill or agent, and CLI."
+
+policy:
+  allow_implicit_invocation: false

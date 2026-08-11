@@ -1,6 +1,7 @@
 ---
 name: agent-repo-router
 description: "Route coding tasks to the right repo and CLI."
+disable-model-invocation: true
 ---
 
 # AgentRepoRouter Skill

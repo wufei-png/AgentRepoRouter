@@ -1,6 +1,7 @@
 ---
 name: agent-repo-router
 description: "将编码任务路由到合适的仓库和 CLI。"
+disable-model-invocation: true
 ---
 
 # AgentRepoRouter Skill

@@ -2107,25 +2107,30 @@ EOF
 deploy_skill() {
     local script_dir
     local skill_zh_local
-    local skill_en_local
+    local skill_default_local
+    local metadata_local
     local guide_zh_local
     local guide_en_local
     local skill_src_zh=""
     local skill_src_en=""
+    local metadata_src=""
     local guide_src_zh=""
     local guide_src_en=""
     local tmp_skill_zh=""
     local tmp_skill_en=""
+    local tmp_metadata=""
     local tmp_guide_zh=""
     local tmp_guide_en=""
     local skill_dest="$INSTALL_TARGET_DIR/SKILL.md"
     local references_dest_dir="$INSTALL_TARGET_DIR/references"
+    local agents_dest_dir="$INSTALL_TARGET_DIR/agents"
 
     echo "Deploying $SKILL_NAME skill..."
 
     script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     skill_zh_local="$script_dir/../skills/$SKILL_SLUG/SKILL.zh.md"
-    skill_en_local="$script_dir/../skills/$SKILL_SLUG/SKILL.en.md"
+    skill_default_local="$script_dir/../skills/$SKILL_SLUG/SKILL.md"
+    metadata_local="$script_dir/../skills/$SKILL_SLUG/agents/openai.yaml"
     guide_zh_local="$script_dir/../skills/$SKILL_SLUG/references/guide.zh.md"
     guide_en_local="$script_dir/../skills/$SKILL_SLUG/references/guide.en.md"
 
@@ -2140,15 +2145,26 @@ deploy_skill() {
         skill_src_zh="$tmp_skill_zh"
     fi
 
-    if should_use_local_file "$skill_en_local"; then
-        skill_src_en="$skill_en_local"
+    if should_use_local_file "$skill_default_local"; then
+        skill_src_en="$skill_default_local"
     else
         tmp_skill_en="$(mktemp)"
-        if ! download_remote_file "skills/$SKILL_SLUG/SKILL.en.md" "$tmp_skill_en"; then
+        if ! download_remote_file "skills/$SKILL_SLUG/SKILL.md" "$tmp_skill_en"; then
             rm -f "$tmp_skill_zh" "$tmp_skill_en"
             exit 1
         fi
         skill_src_en="$tmp_skill_en"
+    fi
+
+    if should_use_local_file "$metadata_local"; then
+        metadata_src="$metadata_local"
+    else
+        tmp_metadata="$(mktemp)"
+        if ! download_remote_file "skills/$SKILL_SLUG/agents/openai.yaml" "$tmp_metadata"; then
+            rm -f "$tmp_skill_zh" "$tmp_skill_en" "$tmp_metadata"
+            exit 1
+        fi
+        metadata_src="$tmp_metadata"
     fi
 
     if should_use_local_file "$guide_zh_local"; then
@@ -2177,6 +2193,7 @@ deploy_skill() {
 
     mkdir -p "$INSTALL_TARGET_DIR"
     mkdir -p "$references_dest_dir"
+    mkdir -p "$agents_dest_dir"
 
     if [ "$SKILL_LANG" = "zh" ]; then
         cp "$skill_src_zh" "$skill_dest"
@@ -2187,6 +2204,8 @@ deploy_skill() {
         rm -f "$INSTALL_TARGET_DIR/SKILL.zh.md" "$INSTALL_TARGET_DIR/SKILL.en.md" 2>/dev/null || true
         echo -e "${GREEN}✓ Deployed English version of $SKILL_NAME${NC}"
     fi
+
+    cp "$metadata_src" "$agents_dest_dir/openai.yaml"
 
     if [ "$SKILL_LANG" = "zh" ]; then
         if [ -n "$guide_src_zh" ] && [ -f "$guide_src_zh" ]; then
@@ -2200,7 +2219,7 @@ deploy_skill() {
         rm -f "$references_dest_dir/guide.zh.md"
     fi
 
-    rm -f "$tmp_skill_zh" "$tmp_skill_en" "$tmp_guide_zh" "$tmp_guide_en"
+    rm -f "$tmp_skill_zh" "$tmp_skill_en" "$tmp_metadata" "$tmp_guide_zh" "$tmp_guide_en"
 
     echo ""
 }

@@ -71,8 +71,9 @@ Router Skill 源文件：
 
 ```text
 skills/agent-repo-router/
+├── SKILL.md
 ├── SKILL.zh.md
-├── SKILL.en.md
+├── agents/openai.yaml
 └── references/
     ├── guide.zh.md
     ├── guide.en.md

@@ -180,8 +180,8 @@ AgentRepoRouter/
 │   └── install.sh              # 安装脚本
 ├── skills/
 │   └── agent-repo-router/
-│       ├── SKILL.zh.md         # Router Skill (中文)
-│       ├── SKILL.en.md         # Router Skill (英文)
+│       ├── SKILL.md            # Router Skill (英文默认)
+│       ├── SKILL.zh.md         # Router Skill (中文安装模板)
 │       └── references/
 │           └── repo_mappings.json
 ├── tests/repos/               # 测试仓库

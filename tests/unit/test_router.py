@@ -12,7 +12,7 @@ ROUTER_DIR = PROJECT_ROOT / "skills" / "agent-repo-router"
 def test_skill_variants_use_references_repo_mappings():
     expected_guides = {
         ROUTER_DIR / "SKILL.zh.md": "references/guide.zh.md",
-        ROUTER_DIR / "SKILL.en.md": "references/guide.en.md",
+        ROUTER_DIR / "SKILL.md": "references/guide.en.md",
     }
 
     for skill_path, guide_ref in expected_guides.items():
@@ -30,6 +30,14 @@ def test_skill_variants_use_references_repo_mappings():
 def test_router_reference_guides_exist():
     assert (ROUTER_DIR / "references" / "guide.zh.md").exists()
     assert (ROUTER_DIR / "references" / "guide.en.md").exists()
+
+
+def test_skill_is_manual_only_for_codex():
+    skill_content = (ROUTER_DIR / "SKILL.md").read_text()
+    metadata_content = (ROUTER_DIR / "agents" / "openai.yaml").read_text()
+
+    assert "disable-model-invocation: true" in skill_content
+    assert "allow_implicit_invocation: false" in metadata_content
 
 
 def test_reference_repo_mappings_matches_current_schema():
