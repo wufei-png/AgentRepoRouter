@@ -320,3 +320,7 @@ Router:
 - [docs/advertisement/why-agent-repo-router.md](docs/advertisement/why-agent-repo-router.md) - 面向潜在用户的推荐文章
 - [docs/plans/migration/plan.md](docs/plans/migration/plan.md) - 迁移历史与实施计划
 - [legacy/README.md](legacy/README.md) - 历史归档资料
+
+## 许可证
+
+AgentRepoRouter 采用 [MIT License](LICENSE) 发布。

@@ -325,3 +325,7 @@ Pair AgentRepoRouter with other tools when needed:
 - [docs/advertisement/why-agent-repo-router.md](docs/advertisement/why-agent-repo-router.md) - Recommendation article for potential users
 - [docs/plans/migration/plan.md](docs/plans/migration/plan.md) - Migration history and implementation plan
 - [legacy/README.md](legacy/README.md) - Archived legacy materials
+
+## License
+
+AgentRepoRouter is released under the [MIT License](LICENSE).
