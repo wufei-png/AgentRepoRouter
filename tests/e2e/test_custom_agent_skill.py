@@ -11,7 +11,9 @@ def test_backend_repo_contains_claude_skill_and_agent():
     backend_repo = TEST_REPOS / "test-backend"
 
     assert (backend_repo / ".claude" / "agents" / "bugfix.md").exists()
-    assert (backend_repo / ".claude" / "skills" / "build_and_test" / "SKILL.md").exists()
+    assert (
+        backend_repo / ".claude" / "skills" / "build_and_test" / "SKILL.md"
+    ).exists()
 
 
 def test_docs_repo_contains_opencode_skill_and_agent():

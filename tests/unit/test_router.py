@@ -53,8 +53,21 @@ def test_reference_repo_mappings_matches_current_schema():
     assert data["schemaVersion"] == 2
     assert "language" not in data
     assert data["installMode"] == "global"
-    assert data["installHosts"] == ["global", "openclaw", "claude-code", "opencode", "codex", "hermes"]
-    assert data["executionClis"] == ["claude-code", "opencode", "cursor", "codex", "hermes"]
+    assert data["installHosts"] == [
+        "global",
+        "openclaw",
+        "claude-code",
+        "opencode",
+        "codex",
+        "hermes",
+    ]
+    assert data["executionClis"] == [
+        "claude-code",
+        "opencode",
+        "cursor",
+        "codex",
+        "hermes",
+    ]
     assert all(
         set(repo.keys()) == {"name", "path", "aliases", "skills", "agents"}
         for repo in data["repos"]
@@ -87,7 +100,10 @@ def test_legacy_repo_mappings_file_has_been_removed():
 
 def test_repo_mappings_validator_accepts_reference_file():
     result = subprocess.run(
-        [str(PROJECT_ROOT / "scripts" / "validate_repo_mappings.sh"), str(ROUTER_DIR / "references" / "repo_mappings.json")],
+        [
+            str(PROJECT_ROOT / "scripts" / "validate_repo_mappings.sh"),
+            str(ROUTER_DIR / "references" / "repo_mappings.json"),
+        ],
         text=True,
         capture_output=True,
         check=False,

@@ -39,7 +39,8 @@ def real_e2e_config():
     config = {
         "agent_id": agent_id,
         "agent_workspace": Path(agent_workspace).expanduser(),
-        "judge_agent": os.environ.get("AGENT_REPO_ROUTER_REAL_E2E_JUDGE_AGENT") or agent_id,
+        "judge_agent": os.environ.get("AGENT_REPO_ROUTER_REAL_E2E_JUDGE_AGENT")
+        or agent_id,
         "language": os.environ.get("AGENT_REPO_ROUTER_REAL_E2E_LANGUAGE") or "en",
         "thinking": os.environ.get("AGENT_REPO_ROUTER_REAL_E2E_THINKING") or "medium",
     }
@@ -55,7 +56,9 @@ def _run_judge(real_e2e_config: dict, prompt: str) -> dict:
         thinking="low",
         timeout=300,
     )
-    return extract_tagged_json(collect_agent_output_text(payload), "AGENT_REPO_ROUTER_JUDGE")
+    return extract_tagged_json(
+        collect_agent_output_text(payload), "AGENT_REPO_ROUTER_JUDGE"
+    )
 
 
 def test_docs_question_is_answered_correctly_live(tmp_path, real_e2e_config):
@@ -184,5 +187,7 @@ def test_backend_bugfix_completes_successfully_live(tmp_path, real_e2e_config):
     )
     verdict = _run_judge(real_e2e_config, judge_prompt)
 
-    assert repo_test_result.returncode == 0, repo_test_result.stdout + repo_test_result.stderr
+    assert repo_test_result.returncode == 0, (
+        repo_test_result.stdout + repo_test_result.stderr
+    )
     assert verdict["pass"], verdict["reasons"]

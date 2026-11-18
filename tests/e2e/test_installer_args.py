@@ -148,7 +148,9 @@ def test_auto_scan_default_depth_is_five(tmp_path):
 
     assert result.returncode == 0, result.stdout + result.stderr
     assert "max depth: 5" in result.stdout
-    assert [repo["path"] for repo in load_deployed_config(home_dir)["repos"]] == [str(shallow_repo)]
+    assert [repo["path"] for repo in load_deployed_config(home_dir)["repos"]] == [
+        str(shallow_repo)
+    ]
 
 
 def test_scan_depth_environment_overrides_default(tmp_path):
@@ -179,7 +181,9 @@ def test_scan_depth_environment_overrides_default(tmp_path):
 
     assert result.returncode == 0, result.stdout + result.stderr
     assert "max depth: 2" in result.stdout
-    assert [repo["path"] for repo in load_deployed_config(home_dir)["repos"]] == [str(shallow_repo)]
+    assert [repo["path"] for repo in load_deployed_config(home_dir)["repos"]] == [
+        str(shallow_repo)
+    ]
 
 
 def test_repo_arg_inside_git_repo_normalizes_to_repo_root(tmp_path):
@@ -376,13 +380,17 @@ def test_existing_backup_skip_and_overwrite_for_install_target(tmp_path):
     old_target = backup_home / ".agents" / "skills" / "agent-repo-router"
     old_target.mkdir(parents=True)
     (old_target / "old.txt").write_text("old")
-    backup_result = run_install_args(backup_home, base_args(repo)[:-1] + ["backup"], env)
+    backup_result = run_install_args(
+        backup_home, base_args(repo)[:-1] + ["backup"], env
+    )
     assert backup_result.returncode == 0, backup_result.stdout + backup_result.stderr
     roots = backup_roots(backup_home)
     assert len(roots) == 1
     assert (roots[0] / "canonical-agent-repo-router" / "old.txt").exists()
     assert str(roots[0]) in backup_result.stdout
-    assert not (backup_home / ".agents" / "skills" / "agent-repo-router_backup_0").exists()
+    assert not (
+        backup_home / ".agents" / "skills" / "agent-repo-router_backup_0"
+    ).exists()
 
     skip_home = tmp_path / "skip-home"
     skip_target = skip_home / ".agents" / "skills" / "agent-repo-router"
@@ -398,7 +406,9 @@ def test_existing_backup_skip_and_overwrite_for_install_target(tmp_path):
     overwrite_target.mkdir(parents=True)
     (overwrite_target / "old.txt").write_text("old")
     overwrite_result = run_install_args(overwrite_home, base_args(repo), env)
-    assert overwrite_result.returncode == 0, overwrite_result.stdout + overwrite_result.stderr
+    assert overwrite_result.returncode == 0, (
+        overwrite_result.stdout + overwrite_result.stderr
+    )
     assert not (overwrite_target / "old.txt").exists()
     assert deployed_config_path(overwrite_home).exists()
 
@@ -434,7 +444,9 @@ def test_existing_backup_for_host_link_target(tmp_path):
     assert len(roots) == 1
     assert (roots[0] / "openclaw-agent-repo-router" / "old.txt").exists()
     assert str(roots[0]) in result.stdout
-    assert not (home_dir / ".openclaw" / "skills" / "agent-repo-router_backup_0").exists()
+    assert not (
+        home_dir / ".openclaw" / "skills" / "agent-repo-router_backup_0"
+    ).exists()
     assert openclaw_target.is_symlink()
 
 
@@ -470,8 +482,12 @@ def test_existing_canonical_and_host_directories_share_one_backup_root(tmp_path)
     assert result.returncode == 0, result.stdout + result.stderr
     roots = backup_roots(home_dir)
     assert len(roots) == 1
-    assert (roots[0] / "canonical-agent-repo-router" / "old-canonical.txt").read_text() == "old-canonical"
-    assert (roots[0] / "openclaw-agent-repo-router" / "old-openclaw.txt").read_text() == "old-openclaw"
+    assert (
+        roots[0] / "canonical-agent-repo-router" / "old-canonical.txt"
+    ).read_text() == "old-canonical"
+    assert (
+        roots[0] / "openclaw-agent-repo-router" / "old-openclaw.txt"
+    ).read_text() == "old-openclaw"
     assert str(roots[0]) in result.stdout
     assert openclaw_target.is_symlink()
 
@@ -546,7 +562,9 @@ def test_existing_skip_preserves_symlink_target(tmp_path):
     assert backup_roots(home_dir) == []
 
 
-def test_existing_skip_preserves_host_symlink_to_canonical_without_partial_install(tmp_path):
+def test_existing_skip_preserves_host_symlink_to_canonical_without_partial_install(
+    tmp_path,
+):
     home_dir = tmp_path / "home"
     repo = make_repo(tmp_path / "demo-repo")
     canonical_target = deployed_skill_path(home_dir).parent

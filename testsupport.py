@@ -74,7 +74,9 @@ def validate_repo_mappings_file(config_path: Path) -> None:
         check=False,
     )
     if result.returncode != 0:
-        raise AssertionError(result.stderr or result.stdout or f"validation failed for {config_path}")
+        raise AssertionError(
+            result.stderr or result.stdout or f"validation failed for {config_path}"
+        )
 
 
 def write_repo_mappings(
@@ -192,7 +194,9 @@ def auto_scan_input(
     return "\n".join(lines) + "\n"
 
 
-def make_fake_bin(tmp_path: Path, available: set[str], node_version: str = "v24.13.0") -> Path:
+def make_fake_bin(
+    tmp_path: Path, available: set[str], node_version: str = "v24.13.0"
+) -> Path:
     bin_dir = tmp_path / "fake-bin"
     bin_dir.mkdir()
     real_node = shutil.which("node")
@@ -219,7 +223,9 @@ exec "{real_node}" "$@"
     for name in available:
         script_path = bin_dir / name
         script_path.write_text(scripts[name])
-        script_path.chmod(script_path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        script_path.chmod(
+            script_path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+        )
 
     return bin_dir
 
@@ -335,13 +341,17 @@ def run_openclaw_agent(
         timeout=timeout,
     )
     if result.returncode != 0:
-        raise AssertionError(result.stderr or result.stdout or "openclaw agent command failed")
+        raise AssertionError(
+            result.stderr or result.stdout or "openclaw agent command failed"
+        )
 
     return result, parse_json_output(result.stdout)
 
 
 def collect_agent_output_text(payload: object) -> str:
-    return "\n".join(fragment for fragment in collect_text_fragments(payload) if fragment.strip())
+    return "\n".join(
+        fragment for fragment in collect_text_fragments(payload) if fragment.strip()
+    )
 
 
 def copy_fixture_repo(source_repo: Path, destination: Path) -> Path:
@@ -364,7 +374,9 @@ def initialize_git_repo(repo_path: Path) -> None:
     for command in commands:
         result = run_command(command, cwd=repo_path)
         if result.returncode != 0:
-            raise AssertionError(result.stderr or result.stdout or f"git command failed: {command}")
+            raise AssertionError(
+                result.stderr or result.stdout or f"git command failed: {command}"
+            )
 
 
 def run_repo_tests(repo_path: Path) -> subprocess.CompletedProcess[str]:
@@ -383,7 +395,9 @@ def temporary_router_skill_override(
     repos: list[dict],
 ):
     workspace_skill_dir = agent_workspace / "skills" / SKILL_SLUG
-    backup_dir = workspace_skill_dir.with_name(f"{SKILL_SLUG}.__agent_repo_router_backup__")
+    backup_dir = workspace_skill_dir.with_name(
+        f"{SKILL_SLUG}.__agent_repo_router_backup__"
+    )
 
     if backup_dir.exists():
         shutil.rmtree(backup_dir)
@@ -402,7 +416,9 @@ def temporary_router_skill_override(
         (workspace_skill_dir / "SKILL.md").write_text(template_path.read_text())
         for reference_path in references_dir.glob("*.md"):
             shutil.copy2(reference_path, workspace_references_dir / reference_path.name)
-        write_repo_mappings(workspace_references_dir / "repo_mappings.json", agents, repos)
+        write_repo_mappings(
+            workspace_references_dir / "repo_mappings.json", agents, repos
+        )
         yield workspace_skill_dir
     finally:
         if workspace_skill_dir.exists():

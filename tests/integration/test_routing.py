@@ -32,8 +32,12 @@ def test_default_global_install_creates_canonical_skill_and_host_symlinks(tmp_pa
     assert result.returncode == 0, result.stdout + result.stderr
     assert deployed_skill_path(home_dir).exists()
     assert deployed_config_path(home_dir).exists()
-    assert (deployed_skill_path(home_dir).parent / "references" / "guide.zh.md").exists()
-    assert not (deployed_skill_path(home_dir).parent / "references" / "guide.en.md").exists()
+    assert (
+        deployed_skill_path(home_dir).parent / "references" / "guide.zh.md"
+    ).exists()
+    assert not (
+        deployed_skill_path(home_dir).parent / "references" / "guide.en.md"
+    ).exists()
 
     for host in ["openclaw", "claude-code", "opencode", "hermes"]:
         host_path = deployed_host_path(home_dir, host)
@@ -44,7 +48,14 @@ def test_default_global_install_creates_canonical_skill_and_host_symlinks(tmp_pa
     assert deployed_config == {
         "schemaVersion": 2,
         "installMode": "global",
-        "installHosts": ["global", "openclaw", "claude-code", "opencode", "codex", "hermes"],
+        "installHosts": [
+            "global",
+            "openclaw",
+            "claude-code",
+            "opencode",
+            "codex",
+            "hermes",
+        ],
         "executionClis": ["claude-code", "opencode", "codex"],
         "repos": [
             {
@@ -57,7 +68,10 @@ def test_default_global_install_creates_canonical_skill_and_host_symlinks(tmp_pa
         ],
     }
 
-    assert "读取 `references/repo_mappings.json`" in deployed_skill_path(home_dir).read_text()
+    assert (
+        "读取 `references/repo_mappings.json`"
+        in deployed_skill_path(home_dir).read_text()
+    )
 
 
 def test_single_host_install_writes_directly_without_global_source(tmp_path):
