@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  offline-tests:
+    name: Offline tests and Ruff
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      # The installer tests must read repository files, never GitHub raw URLs.
+      AGENT_REPO_ROUTER_USE_LOCAL_CACHE: "true"
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.11"
+
+      - name: Set up Node.js for installer tests
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24.15.0"
+
+      - name: Install locked test tools
+        run: python -m pip install --require-hashes -r requirements-test.txt
+
+      - name: Check Ruff lint
+        run: ruff check .
+
+      - name: Check Ruff formatting
+        run: ruff format --check .
+
+      - name: Run offline test suite
+        env:
+          HOME: ${{ runner.temp }}/ci-home
+          TMPDIR: ${{ runner.temp }}/ci-tmp
+        run: |
+          mkdir -p "$HOME" "$TMPDIR"
+          python -m pytest -p pytest_socket --disable-socket -q \
+            tests/unit tests/integration tests/e2e

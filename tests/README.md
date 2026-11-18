@@ -16,10 +16,20 @@
 
 ## Run
 
-从项目根目录执行：
+测试工具由仅测试用途的哈希锁固定；`requirements-test.in` 是输入，`requirements-test.txt` 是生成后的完整锁。在隔离的 Python 3.11 环境中，从项目根目录执行：
 
 ```bash
-PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 uv run --with pytest pytest -q
+python -m pip install --require-hashes -r requirements-test.txt
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -p pytest_socket --disable-socket -q tests/unit tests/integration tests/e2e
+```
+
+测试需要 Bash 和 Node.js 18+；installer 子进程通过 fake PATH 使用 `git` 与 agent CLI 的 stub，不调用真实 CLI。上述命令只运行默认离线测试，不调用真实 gateway 或网络。
+
+Lint 和格式检查使用与 pre-commit 相同的 Ruff 版本：
+
+```bash
+ruff check .
+ruff format --check .
 ```
 
 ## Real OpenClaw E2E
@@ -67,3 +77,4 @@ bash scripts/run_real_e2e.sh
 - 测试会使用 fake PATH 模拟不同 CLI 安装状态，不需要真的调用 Claude Code、OpenCode、Cursor 或 Codex。
 - 测试中的安装脚本执行使用临时 `HOME`，不会污染当前用户目录。
 - `tests/repos/` 只作为 fixture 目录使用，不会被 pytest 递归收集。
+- `tests/repos/test-*` 是普通文件 fixture，不需要初始化 submodule。

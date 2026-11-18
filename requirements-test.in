@@ -1,0 +1,5 @@
+# Test-only tools for the offline CI suite. This is not a product dependency list.
+# Versions mirror .pre-commit-config.yaml (ruff) and tests/README.md (pytest-socket).
+pytest==9.2.0
+pytest-socket==0.7.0
+ruff==0.15.6
