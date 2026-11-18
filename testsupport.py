@@ -125,6 +125,7 @@ def run_install(
         env.update(extra_env)
 
     home_dir.mkdir(parents=True, exist_ok=True)
+    (home_dir / "tmp").mkdir(parents=True, exist_ok=True)
 
     return subprocess.run(
         ["/bin/bash", str(INSTALL_SCRIPT)],
@@ -151,6 +152,7 @@ def run_install_args(
         env.update(extra_env)
 
     home_dir.mkdir(parents=True, exist_ok=True)
+    (home_dir / "tmp").mkdir(parents=True, exist_ok=True)
 
     return subprocess.run(
         ["/bin/bash", str(INSTALL_SCRIPT), *args],
