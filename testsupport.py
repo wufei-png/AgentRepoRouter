@@ -6,6 +6,7 @@ import contextlib
 import json
 import os
 import re
+import shlex
 import shutil
 import stat
 import subprocess
@@ -214,8 +215,10 @@ def _write_executable(path: Path, content: str) -> None:
 
 
 def _blocked_downloader_script(tool: str, log_path: Path) -> str:
+    quoted_log = shlex.quote(str(log_path))
     return f"""#!/bin/sh
-printf '{tool} %s\\n' "$*" >> "{log_path}" 2>/dev/null || true
+log={quoted_log}
+printf '{tool} %s\\n' "$*" >> "$log" 2>/dev/null || true
 printf '{tool} is disabled in offline installer tests: %s\\n' "$*" >&2
 exit 1
 """
@@ -231,12 +234,15 @@ def install_synthetic_downloader(bin_dir: Path, payloads: dict[str, str]) -> Non
     for index, (remote_path, content) in enumerate(payloads.items()):
         payload_path = payload_dir / f"{index:02d}-{Path(remote_path).name}"
         payload_path.write_text(content)
-        cases.append(f'  *"/{remote_path}") src="{payload_path}" ;;')
+        cases.append(
+            f"  *{shlex.quote('/' + remote_path)}) "
+            f"src={shlex.quote(str(payload_path))} ;;"
+        )
     case_block = "\n".join(cases)
 
     downloader = f"""#!/bin/sh
 tool="$(basename "$0")"
-log="{log_path}"
+log={shlex.quote(str(log_path))}
 printf '%s %s\\n' "$tool" "$*" >> "$log" 2>/dev/null || true
 url=""
 dest=""
@@ -293,7 +299,7 @@ if [ "$1" = "-v" ]; then
   echo "{node_version}"
   exit 0
 fi
-exec "{real_node}" "$@"
+exec {shlex.quote(real_node)} "$@"
 """,
         "git": "#!/bin/sh\nexit 0\n",
         "openclaw": "#!/bin/sh\nexit 0\n",

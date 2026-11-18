@@ -8,6 +8,7 @@ from testsupport import (
     deployed_host_path,
     deployed_skill_path,
     fake_download_attempts,
+    fake_download_log_path,
     install_synthetic_downloader,
     load_deployed_config,
     make_fake_bin,
@@ -713,3 +714,91 @@ def test_local_cache_false_uses_synthetic_downloads_only(tmp_path):
     for remote_path in payloads:
         assert f"/{remote_path}" in "\n".join(attempts)
     assert all("offline.invalid" in attempt for attempt in attempts)
+
+
+def test_downloader_shims_preserve_literal_shell_syntax_in_paths(tmp_path):
+    weird_name = (
+        "dsh-audit-$USER -'single' -\"double\" "
+        "-`touch backtick-pwned` -$(touch dollar-paren-pwned)-"
+    )
+    weird_root = tmp_path / weird_name
+    weird_root.mkdir()
+    sandbox = tmp_path / "sandbox"
+    sandbox.mkdir()
+    fake_bin = make_fake_bin(weird_root, {"node"})
+    blocked_url = "https://offline.invalid/AgentRepoRouter/offline/scripts/install.sh"
+
+    blocked_curl = run_command(
+        [
+            str(fake_bin / "curl"),
+            "-fsSL",
+            blocked_url,
+            "-o",
+            str(sandbox / "blocked-curl"),
+        ],
+        cwd=sandbox,
+    )
+    blocked_wget = run_command(
+        [
+            str(fake_bin / "wget"),
+            "-q",
+            "-O",
+            str(sandbox / "blocked-wget"),
+            blocked_url,
+        ],
+        cwd=sandbox,
+    )
+
+    assert blocked_curl.returncode != 0
+    assert blocked_wget.returncode != 0
+    assert "disabled in offline installer tests" in blocked_curl.stderr
+    assert "disabled in offline installer tests" in blocked_wget.stderr
+    assert fake_download_log_path(fake_bin).exists()
+    blocked_attempts = fake_download_attempts(fake_bin)
+    assert len(blocked_attempts) == 2
+    assert blocked_attempts[0].startswith("curl ")
+    assert blocked_attempts[1].startswith("wget ")
+    assert all("offline.invalid" in attempt for attempt in blocked_attempts)
+
+    payload = "synthetic payload for quoted paths\n"
+    install_synthetic_downloader(
+        fake_bin,
+        {"skills/agent-repo-router/SKILL.md": payload},
+    )
+    synthetic_url = (
+        "https://offline.invalid/AgentRepoRouter/offline/"
+        "skills/agent-repo-router/SKILL.md"
+    )
+
+    synthetic_curl = run_command(
+        [
+            str(fake_bin / "curl"),
+            "-fsSL",
+            synthetic_url,
+            "-o",
+            str(sandbox / "synthetic-curl.md"),
+        ],
+        cwd=sandbox,
+    )
+    synthetic_wget = run_command(
+        [
+            str(fake_bin / "wget"),
+            "-q",
+            "-O",
+            str(sandbox / "synthetic-wget.md"),
+            synthetic_url,
+        ],
+        cwd=sandbox,
+    )
+
+    assert synthetic_curl.returncode == 0, synthetic_curl.stderr
+    assert synthetic_wget.returncode == 0, synthetic_wget.stderr
+    assert (sandbox / "synthetic-curl.md").read_text() == payload
+    assert (sandbox / "synthetic-wget.md").read_text() == payload
+
+    attempts = fake_download_attempts(fake_bin)
+    assert len(attempts) == 4
+    assert attempts[2].startswith("curl ")
+    assert attempts[3].startswith("wget ")
+    assert not (sandbox / "backtick-pwned").exists()
+    assert not (sandbox / "dollar-paren-pwned").exists()
