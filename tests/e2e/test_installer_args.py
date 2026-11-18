@@ -7,11 +7,14 @@ from testsupport import (
     deployed_config_path,
     deployed_host_path,
     deployed_skill_path,
+    fake_download_attempts,
+    install_synthetic_downloader,
     load_deployed_config,
     make_fake_bin,
     manual_install_input,
-    run_install_args,
+    run_command,
     run_install,
+    run_install_args,
     with_fake_path,
 )
 
@@ -643,3 +646,70 @@ def test_local_cache_auto_uses_local_files(tmp_path):
 
     assert result.returncode == 0, result.stdout + result.stderr
     assert deployed_config_path(home_dir).exists()
+
+
+def test_fake_bin_blocks_curl_and_wget_network_access_by_default(tmp_path):
+    fake_bin = make_fake_bin(tmp_path, {"node", "git", "codex"})
+    curl_dest = tmp_path / "curl-output"
+    wget_dest = tmp_path / "wget-output"
+    remote_url = "https://offline.invalid/AgentRepoRouter/offline/scripts/install.sh"
+
+    curl_result = run_command(
+        [str(fake_bin / "curl"), "-fsSL", remote_url, "-o", str(curl_dest)]
+    )
+    wget_result = run_command(
+        [str(fake_bin / "wget"), "-q", "-O", str(wget_dest), remote_url]
+    )
+
+    assert curl_result.returncode != 0
+    assert wget_result.returncode != 0
+    assert "disabled in offline installer tests" in curl_result.stderr
+    assert "disabled in offline installer tests" in wget_result.stderr
+    assert not curl_dest.exists()
+    assert not wget_dest.exists()
+
+    attempts = fake_download_attempts(fake_bin)
+    assert len(attempts) == 2
+    assert attempts[0].startswith("curl ")
+    assert attempts[1].startswith("wget ")
+    assert all("offline.invalid" in attempt for attempt in attempts)
+
+
+def test_local_cache_false_uses_synthetic_downloads_only(tmp_path):
+    home_dir = tmp_path / "home"
+    repo = make_repo(tmp_path / "demo-repo")
+    fake_bin = make_fake_bin(tmp_path, {"node", "git", "codex"})
+    payloads = {
+        "scripts/validate_repo_mappings.sh": "#!/usr/bin/env bash\nexit 0\n",
+        "skills/agent-repo-router/SKILL.zh.md": "synthetic zh skill\n",
+        "skills/agent-repo-router/SKILL.md": "synthetic en skill\n",
+        "skills/agent-repo-router/agents/openai.yaml": "synthetic metadata\n",
+        "skills/agent-repo-router/references/guide.zh.md": "synthetic zh guide\n",
+        "skills/agent-repo-router/references/guide.en.md": "synthetic en guide\n",
+    }
+    install_synthetic_downloader(fake_bin, payloads)
+
+    env = with_fake_path(fake_bin)
+    env["AGENT_REPO_ROUTER_USE_LOCAL_CACHE"] = "false"
+    env["AGENT_REPO_ROUTER_REPO"] = "offline.invalid/AgentRepoRouter"
+    env["AGENT_REPO_ROUTER_BRANCH"] = "offline"
+
+    result = run_install_args(home_dir, base_args(repo), env)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    skill_path = deployed_skill_path(home_dir)
+    assert skill_path.read_text() == payloads["skills/agent-repo-router/SKILL.md"]
+    assert (skill_path.parent / "agents" / "openai.yaml").read_text() == payloads[
+        "skills/agent-repo-router/agents/openai.yaml"
+    ]
+    assert (skill_path.parent / "references" / "guide.en.md").read_text() == payloads[
+        "skills/agent-repo-router/references/guide.en.md"
+    ]
+    assert not (skill_path.parent / "references" / "guide.zh.md").exists()
+
+    attempts = fake_download_attempts(fake_bin)
+    assert len(attempts) == len(payloads)
+    assert all(attempt.startswith("curl ") for attempt in attempts)
+    for remote_path in payloads:
+        assert f"/{remote_path}" in "\n".join(attempts)
+    assert all("offline.invalid" in attempt for attempt in attempts)

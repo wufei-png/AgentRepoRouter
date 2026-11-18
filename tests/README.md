@@ -32,6 +32,8 @@ ruff check .
 ruff format --check .
 ```
 
+`pytest-socket` 只约束 pytest 进程；installer 子进程的离线边界由 fake PATH 中的 `curl`/`wget` 替身保证。默认替身立即失败并把调用写入 `fake-bin/fake-download-attempts.log`；需要覆盖下载分支的测试会换成返回合成数据的专用替身，不会发起真实网络请求。
+
 ## Real OpenClaw E2E
 
 真实 OpenClaw e2e 是 opt-in 的，不会默认执行。

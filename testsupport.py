@@ -6,9 +6,9 @@ import contextlib
 import json
 import os
 import re
+import shutil
 import stat
 import subprocess
-import shutil
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -19,6 +19,7 @@ GLOBAL_SKILL_REL = Path(".agents/skills") / SKILL_SLUG
 DEPLOYED_SKILL_REL = GLOBAL_SKILL_REL / "SKILL.md"
 DEPLOYED_CONFIG_REL = GLOBAL_SKILL_REL / "references/repo_mappings.json"
 REPO_MAPPINGS_SCHEMA_VERSION = 2
+FAKE_DOWNLOAD_LOG_NAME = "fake-download-attempts.log"
 
 
 HOST_SKILL_RELS = {
@@ -196,6 +197,87 @@ def auto_scan_input(
     return "\n".join(lines) + "\n"
 
 
+def fake_download_log_path(bin_dir: Path) -> Path:
+    return bin_dir / FAKE_DOWNLOAD_LOG_NAME
+
+
+def fake_download_attempts(bin_dir: Path) -> list[str]:
+    log_path = fake_download_log_path(bin_dir)
+    if not log_path.exists():
+        return []
+    return [line for line in log_path.read_text().splitlines() if line]
+
+
+def _write_executable(path: Path, content: str) -> None:
+    path.write_text(content)
+    path.chmod(path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+
+def _blocked_downloader_script(tool: str, log_path: Path) -> str:
+    return f"""#!/bin/sh
+printf '{tool} %s\\n' "$*" >> "{log_path}" 2>/dev/null || true
+printf '{tool} is disabled in offline installer tests: %s\\n' "$*" >&2
+exit 1
+"""
+
+
+def install_synthetic_downloader(bin_dir: Path, payloads: dict[str, str]) -> None:
+    """Replace curl/wget shims with offline responses built from synthetic files."""
+    payload_dir = bin_dir / "synthetic-downloads"
+    payload_dir.mkdir(exist_ok=True)
+    log_path = fake_download_log_path(bin_dir)
+
+    cases = []
+    for index, (remote_path, content) in enumerate(payloads.items()):
+        payload_path = payload_dir / f"{index:02d}-{Path(remote_path).name}"
+        payload_path.write_text(content)
+        cases.append(f'  *"/{remote_path}") src="{payload_path}" ;;')
+    case_block = "\n".join(cases)
+
+    downloader = f"""#!/bin/sh
+tool="$(basename "$0")"
+log="{log_path}"
+printf '%s %s\\n' "$tool" "$*" >> "$log" 2>/dev/null || true
+url=""
+dest=""
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -o|-O)
+      if [ "$#" -ge 2 ]; then
+        dest="$2"
+        shift 2
+      else
+        shift
+      fi
+      ;;
+    --output-document=*)
+      dest="${{1#*=}}"
+      shift
+      ;;
+    -*)
+      shift
+      ;;
+    *)
+      url="$1"
+      shift
+      ;;
+  esac
+done
+src=""
+case "$url" in
+{case_block}
+esac
+if [ -z "$url" ] || [ -z "$dest" ] || [ -z "$src" ]; then
+  printf '%s: no synthetic payload for %s\\n' "$tool" "$url" >&2
+  exit 1
+fi
+cp "$src" "$dest"
+"""
+
+    for tool in ("curl", "wget"):
+        _write_executable(bin_dir / tool, downloader)
+
+
 def make_fake_bin(
     tmp_path: Path, available: set[str], node_version: str = "v24.13.0"
 ) -> Path:
@@ -223,11 +305,11 @@ exec "{real_node}" "$@"
     }
 
     for name in available:
-        script_path = bin_dir / name
-        script_path.write_text(scripts[name])
-        script_path.chmod(
-            script_path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
-        )
+        _write_executable(bin_dir / name, scripts[name])
+
+    log_path = fake_download_log_path(bin_dir)
+    for tool in ("curl", "wget"):
+        _write_executable(bin_dir / tool, _blocked_downloader_script(tool, log_path))
 
     return bin_dir
 
